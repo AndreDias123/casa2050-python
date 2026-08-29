@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Casa 2050{% endblock %}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+{% if usuario_logado.is_authenticated %}
+<div class="shell">
+  <div class="sidebar">
+    <div class="mark">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"/><path d="M8.5 12 L11 14.5 L15.5 9.5"/>
+      </svg>
+    </div>
+    <a class="navbtn {{ 'active' if request.endpoint == 'main.dashboard' else '' }}" href="{{ url_for('main.dashboard') }}" title="Painel">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11 L12 4 L20 11"/><path d="M6 9.5 V20 H18 V9.5"/></svg>
+    </a>
+    <a class="navbtn {{ 'active' if request.endpoint and request.endpoint.startswith('energia.') else '' }}" href="{{ url_for('energia.painel') }}" title="Energia">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 3 L6 14 H11 L10 21 L18 10 H12 Z"/></svg>
+    </a>
+    <div style="flex:1;"></div>
+    <a class="navbtn" href="{{ url_for('auth.logout') }}" title="Sair">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4 H19 V20 H15 M10 8 L4 12 L10 16 M4 12 H15"/></svg>
+    </a>
+    <div class="avatar">{{ usuario_logado.nome[0]|upper }}</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <h1>{% block header %}Casa 2050{% endblock %}</h1>
+        <div class="sub">{% block subheader %}{% endblock %}</div>
+      </div>
+      <div class="user-chip">
+        <div class="avatar" style="margin-top:0;">{{ usuario_logado.nome[0]|upper }}</div>
+        <div>
+          <div class="name">{{ usuario_logado.nome }}</div>
+          <div class="role">{{ 'Administrador' if usuario_logado.is_admin else 'Usuário Comum' }}</div>
+        </div>
+      </div>
+    </div>
+    <div class="content">
+      {% with mensagens = get_flashed_messages(with_categories=true) %}
+        {% if mensagens %}
+          {% for categoria, texto in mensagens %}
+            <div class="flash {{ categoria }}">{{ texto }}</div>
+          {% endfor %}
+        {% endif %}
+      {% endwith %}
+      {% block content %}{% endblock %}
+    </div>
+  </div>
+</div>
+{% else %}
+  {% block guest_content %}{% endblock %}
+{% endif %}
+</body>
+</html>

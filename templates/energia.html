@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}Energia — Casa 2050{% endblock %}
+{% block header %}Energia & custo{% endblock %}
+{% block subheader %}Consumo calculado a partir do histórico real de uso dos dispositivos (últimos 7 dias){% endblock %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:16px;">
+  <div class="card stat-tile">
+    <div class="label">Consumo (7 dias)</div>
+    <div class="value">{{ '%.1f'|format(kwh_total) }} kWh</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Custo estimado</div>
+    <div class="value">R$ {{ '%.2f'|format(custo_total) }}</div>
+    <div class="hint">tarifa de R$ {{ '%.2f'|format(tarifa.valor_kwh if tarifa else 0) }}/kWh</div>
+  </div>
+  <div class="card stat-tile">
+    <div class="label">Maior consumidor</div>
+    {% if linhas %}
+    <div class="value" style="font-size:18px;">{{ linhas[0][0].nome }}</div>
+    <div class="hint">{{ '%.2f'|format(linhas[0][1]) }} kWh esta semana</div>
+    {% else %}
+    <div class="value" style="font-size:18px;">—</div>
+    {% endif %}
+  </div>
+</div>
+
+<div style="display:flex; gap:20px; flex-wrap:wrap;">
+  <div class="card" style="flex:1.4; min-width:320px; padding:24px;">
+    <div style="font-size:15px; font-weight:600; margin-bottom:18px;">Consumo por cômodo</div>
+    {% for nome_comodo, kwh in por_comodo %}
+    <div class="bar-row">
+      <div class="top"><span>{{ nome_comodo }}</span><span style="font-weight:700; font-family:'Space Grotesk';">{{ '%.2f'|format(kwh) }} kWh</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:{{ (kwh / por_comodo[0][1] * 100) if por_comodo[0][1] else 0 }}%;"></div></div>
+    </div>
+    {% else %}
+    <div style="font-size:13px; color:var(--text-faint);">Sem dados de consumo ainda.</div>
+    {% endfor %}
+  </div>
+
+  <div class="card" style="width:380px; flex-shrink:0; padding:24px;">
+    <div style="font-size:15px; font-weight:600; margin-bottom:18px;">Dispositivos que mais consomem</div>
+    {% for dispositivo, kwh in linhas %}
+    <div class="bar-row">
+      <div class="top">
+        <span>{{ dispositivo.nome }} <span style="color:var(--text-faint);">· {{ dispositivo.comodo.nome }}</span></span>
+        <span style="font-weight:700; font-family:'Space Grotesk';">{{ '%.2f'|format(kwh) }} kWh</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" style="width:{{ (kwh / linhas[0][1] * 100) if linhas and linhas[0][1] else 0 }}%;"></div></div>
+    </div>
+    {% else %}
+    <div style="font-size:13px; color:var(--text-faint);">Sem dados ainda.</div>
+    {% endfor %}
+    <div style="margin-top:18px; padding-top:16px; border-top:1px solid var(--border); font-size:11.5px; color:var(--text-faint);">
+      Período: {{ inicio.strftime('%d/%m') }} – {{ fim.strftime('%d/%m') }}
+    </div>
+  </div>
+</div>
+
+<a class="card" style="padding:18px 22px; display:flex; align-items:center; justify-content:space-between; text-decoration:none; color:inherit;" href="{{ url_for('energia.relatorio') }}">
+  <span style="font-size:14px; font-weight:600;">Gerar relatório semanal por e-mail →</span>
+</a>
+{% endblock %}

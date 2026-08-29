@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Entrar — Casa 2050{% endblock %}
+{% block guest_content %}
+<div class="login-wrap">
+  <div class="login-card">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"/><path d="M8.5 12 L11 14.5 L15.5 9.5"/>
+      </svg>
+      <div>
+        <div class="name">CASA 2050</div>
+        <div class="sub">SISTEMA INTELIGENTE</div>
+      </div>
+    </div>
+
+    <h2 style="font-size:22px; font-weight:600; margin-bottom:6px;">Bem-vindo de volta</h2>
+    <div style="color:var(--text-faint); font-size:13.5px; margin-bottom:24px;">Entre para controlar sua casa</div>
+
+    {% with mensagens = get_flashed_messages(with_categories=true) %}
+      {% if mensagens %}
+        {% for categoria, texto in mensagens %}
+          <div class="flash {{ categoria }}">{{ texto }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <form method="post" action="{{ url_for('auth.login') }}">
+      <div class="field-label">E-mail</div>
+      <input class="field" type="text" name="email" placeholder="admin@casa2050.app" autocomplete="username">
+
+      <div class="field-label">Senha</div>
+      <input class="field" type="password" name="senha" placeholder="••••••••••" autocomplete="current-password">
+
+      <button class="btn-primary" type="submit">Entrar</button>
+    </form>
+
+    <div class="demo-creds">
+      Contas de demonstração:<br>
+      Administrador — admin@casa2050.app / admin123<br>
+      Usuário Comum — comum@casa2050.app / comum123
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}Relatório semanal — Casa 2050{% endblock %}
+{% block header %}Relatório semanal por e-mail{% endblock %}
+{% block subheader %}Período: {{ inicio.strftime('%d/%m') }} – {{ fim.strftime('%d/%m') }}{% endblock %}
+
+{% block content %}
+<div class="card" style="padding:26px; max-width:520px;">
+  <div style="font-size:14px; color:var(--text-dim); margin-bottom:20px; line-height:1.6;">
+    Isso calcula o consumo e o custo da semana a partir do histórico real de uso
+    e gera o e-mail de resumo. Se as variáveis <code>SMTP_HOST</code>/<code>SMTP_USER</code>/<code>SMTP_SENHA</code>
+    estiverem configuradas (ver <code>config.py</code>), o e-mail também é enviado de verdade;
+    caso contrário, ele só é gerado e salvo para pré-visualização.
+  </div>
+  <form method="post">
+    <button class="btn-accent" type="submit">Gerar relatório de {{ usuario_logado.email }}</button>
+  </form>
+</div>
+{% endblock %}

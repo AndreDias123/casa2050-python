@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% import "_icons.html" as icons %}
+{% block title %}Painel — Casa 2050{% endblock %}
+{% block header %}Boa noite, {{ usuario_logado.nome }}{% endblock %}
+{% block subheader %}Casa 2050 · {{ ativos }} de {{ total_dispositivos }} dispositivos ativos agora{% endblock %}
+
+{% block content %}
+{% set toggle_tipos = ['luz', 'janela', 'porta', 'tv', 'ar_condicionado', 'robo_aspirador'] %}
+
+{% for comodo in comodos %}
+  {% if comodo.dispositivos %}
+  <div>
+    <div class="room-title">{{ comodo.nome }}</div>
+    <div class="device-grid">
+      {% for d in comodo.dispositivos %}
+      <div class="card device-card">
+        <div class="row-top">
+          <div class="icon-chip">{{ icons.icone(d.icone()) }}</div>
+
+          {% if d.tipo in toggle_tipos %}
+            {% if d.pode_controlar(usuario_logado) %}
+            <form method="post" action="{{ url_for('main.alternar_dispositivo', dispositivo_id=d.id) }}">
+              <button class="toggle {{ 'on' if d.ativo else 'off' }}" type="submit" aria-label="Alternar {{ d.nome }}">
+                <span class="knob"></span>
+              </button>
+            </form>
+            {% else %}
+            <button class="toggle {{ 'on' if d.ativo else 'off' }}" type="button" disabled title="Sem permissão para controlar">
+              <span class="knob"></span>
+            </button>
+            {% endif %}
+          {% else %}
+            <span class="badge {{ 'on' if d.ativo else 'off' }}">{{ 'ATIVA' if d.ativo else 'DESLIGADA' }}</span>
+          {% endif %}
+        </div>
+
+        <div>
+          <a class="name" style="color:inherit;" href="{{ url_for('main.detalhe_dispositivo', dispositivo_id=d.id) }}">{{ d.nome }}</a>
+          <div class="room">{{ comodo.nome }}</div>
+        </div>
+
+        <div class="status-row">
+          <span class="status-dot {{ 'on' if d.ativo else 'off' }}"></span>{{ d.status() }}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+{% endfor %}
+
+<a class="card" style="padding:20px 24px; display:flex; align-items:center; gap:16px; text-decoration:none; color:inherit;" href="{{ url_for('energia.painel') }}">
+  <div>
+    <div style="font-size:12.5px; color:var(--text-faint); margin-bottom:4px;">Resumo</div>
+    <div style="font-size:15px; font-weight:600;">Ver consumo e custo de energia →</div>
+  </div>
+</a>
+{% endblock %}

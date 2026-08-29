@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Relatório gerado — Casa 2050{% endblock %}
+{% block header %}Relatório gerado{% endblock %}
+{% block subheader %}{{ 'Enviado por e-mail de verdade.' if relatorio.enviado_de_verdade else 'SMTP não configurado — gerado e salvo, mas não enviado. Veja a pré-visualização abaixo.' }}{% endblock %}
+
+{% block content %}
+<div class="flash {{ 'sucesso' if relatorio.enviado_de_verdade else 'erro' }}">
+  {% if relatorio.enviado_de_verdade %}
+    E-mail enviado para {{ relatorio.usuario.email }}.
+  {% else %}
+    Simulado: configure SMTP_HOST / SMTP_USER / SMTP_SENHA em config.py para enviar de verdade.
+  {% endif %}
+</div>
+
+<div class="card" style="padding:0; overflow:hidden; max-width:620px;">
+  <iframe srcdoc="{{ html_email|e }}" style="width:100%; height:820px; border:none; display:block;"></iframe>
+</div>
+
+<a class="btn-ghost" style="width:fit-content; text-decoration:none;" href="{{ url_for('energia.painel') }}">← Voltar para energia</a>
+{% endblock %}

@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% import "_icons.html" as icons %}
+{% block title %}{{ dispositivo.nome }} — Casa 2050{% endblock %}
+{% block header %}{{ dispositivo.nome }}{% endblock %}
+{% block subheader %}{{ dispositivo.comodo.nome }} · {{ dispositivo.status() }}{% endblock %}
+
+{% block content %}
+<div style="display:flex; gap:20px; align-items:flex-start; flex-wrap:wrap;">
+
+  <div style="flex:1.4; min-width:320px; display:flex; flex-direction:column; gap:20px;">
+
+    <div class="card" style="padding:26px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px;">
+        <div style="display:flex; align-items:center; gap:14px;">
+          <div class="icon-chip" style="width:52px; height:52px; border-radius:14px;">{{ icons.icone(dispositivo.icone(), 26) }}</div>
+          <div>
+            <div style="font-weight:600; font-size:17px;">{{ dispositivo.nome }}</div>
+            <div class="status-row"><span class="status-dot {{ 'on' if dispositivo.ativo else 'off' }}"></span>{{ dispositivo.status() }}</div>
+          </div>
+        </div>
+
+        {% if dispositivo.pode_controlar(usuario_logado) %}
+        <form method="post" action="{{ url_for('main.alternar_dispositivo', dispositivo_id=dispositivo.id) }}">
+          <button class="toggle {{ 'on' if dispositivo.ativo else 'off' }}" type="submit" style="width:56px; height:30px;">
+            <span class="knob" style="width:24px; height:24px;"></span>
+          </button>
+        </form>
+        {% else %}
+        <span class="badge off">Sem permissão</span>
+        {% endif %}
+      </div>
+
+      {% if dispositivo.tipo == 'luz' %}
+      <form method="post" action="{{ url_for('main.ajustar_intensidade', dispositivo_id=dispositivo.id) }}">
+        <label>Intensidade (1–100)</label><br>
+        <input type="number" name="intensidade" min="1" max="100"
+               value="{{ dispositivo.atributos_extra.get('intensidade', 100) }}" style="width:100px; margin:8px 0;">
+        <button class="btn-accent" type="submit">Aplicar</button>
+        <div style="font-size:11.5px; color:var(--text-faint); margin-top:6px;">Só aceita número inteiro entre 1 e 100 — texto ou valores fora da faixa são rejeitados.</div>
+      </form>
+      {% endif %}
+    </div>
+
+    <div class="card" style="padding:26px;">
+      <div style="font-size:15px; font-weight:600; margin-bottom:16px;">Histórico de uso hoje</div>
+      {% if registros_hoje %}
+      <div style="display:flex; flex-direction:column; gap:8px;">
+        {% for r in registros_hoje %}
+        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-dim); border-bottom:1px solid var(--border); padding-bottom:8px;">
+          <span>{{ r.evento|capitalize }}{% if r.valor %} · {{ r.valor }}{% endif %}</span>
+          <span style="color:var(--text-faint);">{{ r.timestamp.strftime('%H:%M') }}{% if not r.usuario %} · automação{% endif %}</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div style="font-size:13px; color:var(--text-faint);">Nenhum evento registrado hoje ainda.</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="width:360px; flex-shrink:0; display:flex; flex-direction:column; gap:20px;">
+
+    <div class="card" style="padding:24px;">
+      <div style="font-size:15px; font-weight:600; margin-bottom:16px;">Agendamento</div>
+      {% for automacao in automacoes %}
+      <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:13.5px;">
+        <strong>{{ automacao.nome }}</strong><br>
+        <span style="color:var(--text-faint); font-size:12px;">
+          {{ automacao.horario }} · {{ automacao.dias_semana }}
+          {% for acao in automacao.acoes if acao.dispositivo_id == dispositivo.id %} · {{ acao.acao }}{% endfor %}
+        </span>
+      </div>
+      {% else %}
+      <div style="font-size:13px; color:var(--text-faint); margin-bottom:12px;">Nenhuma automação ainda.</div>
+      {% endfor %}
+
+      <form method="post" action="{{ url_for('main.criar_automacao', dispositivo_id=dispositivo.id) }}" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+        <div>
+          <label>Nome</label><br>
+          <input type="text" name="nome" placeholder="Acender à noite" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+          <label>Horário (HH:MM)</label><br>
+          <input type="text" name="horario" placeholder="18:30" style="width:100%; margin-top:4px;">
+        </div>
+        <div>
+          <label>Ação</label><br>
+          <select name="acao" style="width:100%; margin-top:4px; background:var(--surface); color:var(--text); border:1px solid var(--border-strong); border-radius:8px; padding:9px;">
+            <option value="ligar">Ligar</option>
+            <option value="desligar">Desligar</option>
+          </select>
+        </div>
+        <button class="btn-accent" type="submit">+ Nova automação</button>
+      </form>
+    </div>
+
+    <div class="card" style="padding:24px;">
+      <div style="font-size:15px; font-weight:600; margin-bottom:16px;">Permissões</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--border);">
+        <span style="font-size:13.5px;">Administrador</span>
+        <span class="badge on">Controle total</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; padding:10px 0;">
+        <span style="font-size:13.5px;">Usuário Comum</span>
+        {% if usuario_logado.is_admin %}
+        <form method="post" action="{{ url_for('main.alternar_permissao', dispositivo_id=dispositivo.id) }}">
+          <button class="toggle {{ 'on' if dispositivo.controlavel_por_comum else 'off' }}" type="submit">
+            <span class="knob"></span>
+          </button>
+        </form>
+        {% else %}
+        <span class="badge {{ 'on' if dispositivo.controlavel_por_comum else 'off' }}">{{ 'Permitido' if dispositivo.controlavel_por_comum else 'Bloqueado' }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <a class="btn-ghost" style="text-align:center; text-decoration:none;" href="{{ url_for('main.dashboard') }}">← Voltar ao painel</a>
+  </div>
+</div>
+{% endblock %}
