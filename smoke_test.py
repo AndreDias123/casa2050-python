@@ -20,6 +20,7 @@ def check(name, condition, extra=""):
 
 def main():
     app.config["TESTING"] = True
+    app.config["WTF_CSRF_ENABLED"] = False  # test client não simula token de formulário
     client = app.test_client()
 
     # 1. GET login page

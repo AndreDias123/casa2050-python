@@ -1,9 +1,15 @@
 from flask import Flask
 from flask_login import current_user
+from flask_wtf import CSRFProtect
+from flask_wtf.csrf import generate_csrf
+from markupsafe import Markup
 
 from config import Config
 from extensions import db, login_manager
 from models import Usuario
+from services.agendador import iniciar_agendador
+
+csrf = CSRFProtect()
 
 
 def create_app(config_class=Config):
@@ -12,6 +18,7 @@ def create_app(config_class=Config):
 
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     from auth import bp as auth_bp
     from main import bp as main_bp
@@ -28,6 +35,12 @@ def create_app(config_class=Config):
     @app.context_processor
     def injetar_usuario():
         return {"usuario_logado": current_user}
+
+    @app.template_global()
+    def csrf_field():
+        return Markup(f'<input type="hidden" name="csrf_token" value="{generate_csrf()}">')
+
+    iniciar_agendador(app)
 
     return app
 

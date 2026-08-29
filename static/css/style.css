@@ -18,6 +18,17 @@
   --warning-soft: rgba(250,178,25,0.14);
   --critical: #d03b3b;
   --good: #0ca30c;
+
+  /* paleta categórica (passos "dark" da paleta de referência — este app só
+     tem tema escuro) — ordem fixa, nunca escolhida pela posição do dado. */
+  --serie-1: #3987e5; /* azul */
+  --serie-2: #d95926; /* laranja */
+  --serie-3: #199e70; /* água */
+  --serie-4: #c98500; /* amarelo */
+  --serie-5: #d55181; /* magenta */
+  --serie-6: #008300; /* verde */
+  --serie-7: #9085e9; /* violeta */
+  --serie-8: #e66767; /* vermelho */
 }
 
 html, body {
@@ -148,3 +159,76 @@ label { font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
 .bar-row .top { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 6px; }
 .bar-track { height: 8px; background: var(--surface); border-radius: 999px; overflow: hidden; }
 .bar-fill { height: 100%; background: var(--accent); border-radius: 999px; }
+
+/* ---------- delta (variação percentual) ---------- */
+.delta { font-size: 12px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+.delta.up-bad { color: var(--warning); }
+.delta.up-good { color: var(--good); }
+.delta.flat { color: var(--text-faint); }
+
+/* ---------- alerta (insight de consumo) ---------- */
+.alert-box {
+  display: flex; gap: 14px; align-items: flex-start; padding: 16px 20px;
+  background: var(--warning-soft); border: 1px solid rgba(250,178,25,0.35); border-radius: 12px;
+  font-size: 13.5px; color: var(--text-dim);
+}
+.alert-box strong { color: var(--text); }
+.alert-box .icon { color: var(--warning); flex-shrink: 0; margin-top: 1px; }
+
+/* ---------- banner "próxima automação" ---------- */
+.next-automation {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  padding: 18px 22px;
+}
+.next-automation .left { display: flex; align-items: center; gap: 14px; }
+.next-automation .icon-chip { width: 40px; height: 40px; border-radius: 10px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.next-automation .title { font-weight: 600; font-size: 14px; }
+.next-automation .detail { font-size: 12.5px; color: var(--text-faint); margin-top: 2px; }
+
+/* ---------- gráfico empilhado por dia (energia) ---------- */
+.stackchart { display: flex; gap: 10px; }
+.stackchart-axis {
+  display: flex; flex-direction: column; justify-content: space-between; align-items: flex-end;
+  font-size: 11px; color: var(--text-faint); padding-bottom: 26px; height: 180px;
+}
+.stackchart-plot { flex: 1; display: flex; align-items: flex-end; gap: 10px; height: 180px; }
+.stackchart-col { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; }
+.stackchart-bar-wrap { width: 100%; flex: 1; display: flex; align-items: flex-end; }
+.stackchart-bar {
+  width: 100%; max-width: 30px; margin: 0 auto; display: flex; flex-direction: column-reverse;
+  gap: 2px; border-radius: 4px 4px 0 0; overflow: hidden;
+}
+.stackchart-seg { width: 100%; }
+.stackchart-daylabel { font-size: 11px; color: var(--text-faint); margin-top: 8px; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border); }
+.legend-item { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-dim); }
+.legend-dot { width: 9px; height: 9px; border-radius: 3px; flex-shrink: 0; }
+
+/* ---------- automações (toggle por automação) ---------- */
+.automation-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.automation-row .info { font-size: 13.5px; }
+.automation-row .meta { color: var(--text-faint); font-size: 12px; margin-top: 2px; }
+.automation-row.inativa .info { opacity: .5; }
+.toggle.small { width: 36px; height: 20px; }
+.toggle.small .knob { width: 14px; height: 14px; }
+.toggle.small.on .knob { left: 18px; }
+.toggle.small.off .knob { left: 2px; }
+
+/* ---------- filtro por cômodo (dashboard) ---------- */
+.room-filter { display: flex; gap: 8px; flex-wrap: wrap; }
+.chip {
+  border: 1px solid var(--border-strong); background: transparent; color: var(--text-dim);
+  border-radius: 999px; padding: 8px 16px; font-size: 13px; cursor: pointer; font-family: inherit;
+}
+.chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+
+/* ---------- login: entrar como (demo) ---------- */
+.login-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 14px; font-size: 10.5px; letter-spacing: .06em; color: var(--text-faint); }
+.login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+.login-quick { display: flex; gap: 10px; }
+.login-quick form { flex: 1; }
+.btn-quick {
+  width: 100%; background: var(--surface-2); border: 1px solid var(--border-strong); color: var(--text);
+  border-radius: 10px; padding: 11px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+}
+.btn-quick:hover { border-color: var(--accent); color: var(--accent); }

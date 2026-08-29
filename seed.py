@@ -1,8 +1,9 @@
 """
 Popula o banco com dados de exemplo: cômodos, dispositivos (com potência
-real em Watts), dois usuários (Administrador e Usuário Comum) e uma semana
+real em Watts), dois usuários (Administrador e Usuário Comum) e duas semanas
 de histórico de uso sintético — para que o painel de energia mostre números
-calculados de verdade pelo services/energia.py, não valores fixos.
+calculados de verdade pelo services/energia.py (incluindo a comparação com a
+semana anterior e o alerta de consumo), não valores fixos.
 
 Uso:
     python seed.py            # cria/recria o banco com dados de exemplo
@@ -12,12 +13,12 @@ from datetime import datetime, timedelta, timezone
 from app import create_app
 from extensions import db
 from models import (
-    Usuario, Comodo, TarifaEnergia, RegistroUso,
+    Usuario, Comodo, TarifaEnergia, RegistroUso, Automacao, AutomacaoAcao,
     Luz, Porta, Janela, Camera, TV, Eletrodomestico, RoboAspirador, ArCondicionado,
 )
 
 
-def _janela_diaria(dispositivo, hora_inicio, hora_fim, dias_atras_inicio=7, dias_atras_fim=1):
+def _janela_diaria(dispositivo, hora_inicio, hora_fim, dias_atras_inicio=14, dias_atras_fim=1):
     """Gera pares ligou/desligou para os últimos N dias completos (sem contar hoje)."""
     agora = datetime.now(timezone.utc)
     for dias in range(dias_atras_inicio, dias_atras_fim - 1, -1):
@@ -97,26 +98,46 @@ def seed():
         db.session.add_all(dispositivos)
         db.session.flush()  # garante que cada dispositivo já tem id antes dos RegistroUso
 
-        # --- uma semana de histórico sintético, para o painel de energia calcular de verdade ---
+        # --- duas semanas de histórico sintético: a mais antiga serve de base de
+        # comparação (variação %, projeção) pro painel de energia; só o
+        # ar-condicionado tem uma tendência real de alta na semana mais recente,
+        # pra exercitar o alerta de consumo com um número plausível. ---
         _janela_diaria(luz_quarto, 18.5, 23.0)
-        _janela_diaria(ac_quarto, 22.0, 30.0)  # 22h -> 06h do dia seguinte
         _janela_diaria(luz_sala, 18.0, 23.5)
         _janela_diaria(tv_sala, 19.0, 22.5)
         _janela_diaria(luz_cozinha, 18.0, 21.0)
         _janela_diaria(robo, 10.0, 10.75)
         _janela_diaria(luz_externa, 18.0, 30.0)  # liga ao anoitecer, apaga ao amanhecer
 
-        _ligado_continuamente_ha(camera_sala, dias=7)
-        _ligado_continuamente_ha(camera_externa, dias=7)
-        _ligado_continuamente_ha(geladeira, dias=7)
+        # ar-condicionado: 7h/noite na semana anterior, 8,5h/noite na semana
+        # atual (22h -> 06h/06h30 do dia seguinte) — cerca de +21%.
+        _janela_diaria(ac_quarto, 22.0, 29.0, dias_atras_inicio=14, dias_atras_fim=8)
+        _janela_diaria(ac_quarto, 22.0, 30.5, dias_atras_inicio=7, dias_atras_fim=1)
 
-        # dois usos rápidos da porta da garagem durante a semana (motor liga por pouco tempo)
+        _ligado_continuamente_ha(camera_sala, dias=14)
+        _ligado_continuamente_ha(camera_externa, dias=14)
+        _ligado_continuamente_ha(geladeira, dias=14)
+
+        # alguns usos rápidos da porta da garagem nas duas semanas (motor liga por pouco tempo)
         agora = datetime.now(timezone.utc)
-        for dias in (5, 2):
+        for dias in (12, 9, 5, 2):
             momento = agora - timedelta(days=dias, hours=3)
             db.session.add(RegistroUso(dispositivo=porta_garagem, evento="ligou", timestamp=momento))
             db.session.add(RegistroUso(dispositivo=porta_garagem, evento="desligou",
                                         timestamp=momento + timedelta(minutes=1)))
+
+        # --- automações de exemplo, já disparadas de verdade pelo agendador (services/agendador.py) ---
+        acender_quarto = Automacao(nome="Acender à noite", horario="18:30", criado_por=admin)
+        acender_quarto.acoes.append(AutomacaoAcao(dispositivo=luz_quarto, acao="ligar"))
+        apagar_quarto = Automacao(nome="Apagar à noite", horario="23:00", criado_por=admin)
+        apagar_quarto.acoes.append(AutomacaoAcao(dispositivo=luz_quarto, acao="desligar"))
+
+        acender_externa = Automacao(nome="Acender ao anoitecer", horario="18:00", criado_por=admin)
+        acender_externa.acoes.append(AutomacaoAcao(dispositivo=luz_externa, acao="ligar"))
+        apagar_externa = Automacao(nome="Apagar ao amanhecer", horario="06:00", criado_por=admin)
+        apagar_externa.acoes.append(AutomacaoAcao(dispositivo=luz_externa, acao="desligar"))
+
+        db.session.add_all([acender_quarto, apagar_quarto, acender_externa, apagar_externa])
 
         # --- estado de "agora" (hoje), para bater com o que a equipe já desenhou no protótipo ---
         _deixar_ligado_hoje_desde(luz_quarto, 18.5)

@@ -10,7 +10,7 @@ Isso é calculado sob demanda (não fica pré-armazenado em outra tabela) —
 para o volume de dados de uma casa simulada isso é rápido o suficiente, e
 evita ter uma tabela derivada para manter sincronizada.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from models import RegistroUso, TarifaEnergia, Dispositivo
 
@@ -67,3 +67,80 @@ def custo(kwh: float, tarifa: TarifaEnergia | None) -> float:
     if not tarifa:
         return 0.0
     return kwh * tarifa.valor_kwh
+
+
+def variacao_percentual(atual: float, anterior: float) -> float | None:
+    """% de mudança de `anterior` para `atual`. None quando não há base de
+    comparação (período anterior sem consumo nenhum) — não dá pra calcular
+    variação percentual em cima de zero."""
+    if not anterior:
+        return None
+    return (atual - anterior) / anterior * 100
+
+
+def projecao_mensal(kwh_periodo: float, dias_periodo: int) -> float:
+    """Projeta o consumo do período pro mês (30 dias), mantendo o ritmo atual."""
+    if dias_periodo <= 0:
+        return 0.0
+    return kwh_periodo / dias_periodo * 30
+
+
+def gerar_alerta(dispositivos, inicio: datetime, fim: datetime, limiar_pct: float = 15.0, kwh_minimo: float = 0.3):
+    """Insight simples baseado em regra: compara o consumo de cada dispositivo
+    nesta semana com a semana anterior e aponta o que mais cresceu, se o
+    crescimento for relevante (acima de `limiar_pct`) e não for ruído
+    (consumo mínimo de `kwh_minimo` kWh, pra não disparar em dispositivo que
+    mal liga).
+
+    Retorna um dict {dispositivo, kwh_atual, variacao} ou None se nada relevante."""
+    duracao = fim - inicio
+    inicio_anterior = inicio - duracao
+
+    melhor = None
+    for dispositivo in dispositivos:
+        atual = kwh_consumidos(dispositivo, inicio, fim)
+        if atual < kwh_minimo:
+            continue
+        anterior = kwh_consumidos(dispositivo, inicio_anterior, inicio)
+        if anterior < kwh_minimo:
+            # sem base de comparação minimamente confiável — não dá pra dizer
+            # que "cresceu X%" em cima de um período que mal teve uso.
+            continue
+        variacao = variacao_percentual(atual, anterior)
+        if variacao is None or variacao < limiar_pct:
+            continue
+        if melhor is None or variacao > melhor["variacao"]:
+            melhor = {"dispositivo": dispositivo, "kwh_atual": atual, "variacao": variacao}
+
+    return melhor
+
+
+_DIAS_ABREV = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+
+
+def consumo_diario_por_comodo(dispositivos, comodos_ordenados, dias: int = 7, fim: datetime | None = None):
+    """kWh consumidos por dia (últimos `dias` dias completos, mais antigo
+    primeiro) quebrado por cômodo — matéria-prima do gráfico empilhado do
+    painel de energia. `comodos_ordenados` fixa a ordem/cor de cada cômodo
+    (a mesma em todo dia, pra cor nunca trocar de sentido no gráfico)."""
+    fim = fim or datetime.now(timezone.utc)
+    fim_hoje = fim.replace(hour=0, minute=0, second=0, microsecond=0) + timedelta(days=1)
+
+    dias_resultado = []
+    for i in range(dias - 1, -1, -1):
+        inicio_dia = min(fim_hoje - timedelta(days=i + 1), fim)
+        fim_dia = min(fim_hoje - timedelta(days=i), fim)
+
+        por_comodo = {c.nome: 0.0 for c in comodos_ordenados}
+        for dispositivo in dispositivos:
+            kwh = kwh_consumidos(dispositivo, inicio_dia, fim_dia)
+            if kwh > 0:
+                por_comodo[dispositivo.comodo.nome] = por_comodo.get(dispositivo.comodo.nome, 0.0) + kwh
+
+        dias_resultado.append({
+            "label": _DIAS_ABREV[inicio_dia.weekday()],
+            "segmentos": list(por_comodo.items()),
+            "total": sum(por_comodo.values()),
+        })
+
+    return dias_resultado

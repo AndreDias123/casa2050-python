@@ -1,10 +1,12 @@
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, current_app
 from flask_login import login_required, current_user
 
 from extensions import db
 from models import Comodo, Dispositivo, Luz, Automacao, AutomacaoAcao, RegistroUso
+from services.agendador import proxima_automacao, rotulo_quando
 
 bp = Blueprint("main", __name__)
 
@@ -15,8 +17,23 @@ def dashboard():
     comodos = Comodo.query.order_by(Comodo.id).all()
     total_dispositivos = Dispositivo.query.count()
     ativos = Dispositivo.query.filter_by(ativo=True).count()
+
+    tz = ZoneInfo(current_app.config["TIMEZONE"])
+    automacao, quando = proxima_automacao(tz)
+    proxima = None
+    if automacao is not None:
+        proxima = {
+            "automacao": automacao,
+            "rotulo": rotulo_quando(quando, tz),
+            "acoes": [
+                f"{'Liga' if acao.acao == 'ligar' else 'Desliga'} {acao.dispositivo.nome}"
+                for acao in automacao.acoes if acao.dispositivo is not None
+            ],
+        }
+
     return render_template(
-        "dashboard.html", comodos=comodos, total_dispositivos=total_dispositivos, ativos=ativos
+        "dashboard.html", comodos=comodos, total_dispositivos=total_dispositivos, ativos=ativos,
+        proxima=proxima,
     )
 
 
@@ -124,4 +141,21 @@ def criar_automacao(dispositivo_id):
     db.session.add(automacao)
     db.session.commit()
     flash("Automação criada.", "sucesso")
+    return redirect(url_for("main.detalhe_dispositivo", dispositivo_id=dispositivo.id))
+
+
+@bp.route("/dispositivo/<int:dispositivo_id>/automacao/<int:automacao_id>/alternar", methods=["POST"])
+@login_required
+def alternar_automacao(dispositivo_id, automacao_id):
+    dispositivo = _get_dispositivo_ou_404(dispositivo_id)
+    if not dispositivo.pode_controlar(current_user):
+        flash("Seu perfil não tem permissão para alterar automações deste dispositivo.", "erro")
+        return redirect(url_for("main.detalhe_dispositivo", dispositivo_id=dispositivo.id))
+
+    automacao = db.session.get(Automacao, automacao_id)
+    if automacao is None:
+        abort(404)
+
+    automacao.ativa = not automacao.ativa
+    db.session.commit()
     return redirect(url_for("main.detalhe_dispositivo", dispositivo_id=dispositivo.id))

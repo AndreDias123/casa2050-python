@@ -7,9 +7,32 @@
 {% block content %}
 {% set toggle_tipos = ['luz', 'janela', 'porta', 'tv', 'ar_condicionado', 'robo_aspirador'] %}
 
+{% if proxima %}
+<div class="card next-automation">
+  <div class="left">
+    <div class="icon-chip">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7 V12 L15.5 14"/></svg>
+    </div>
+    <div>
+      <div class="title">Próxima automação · {{ proxima.automacao.nome }}</div>
+      <div class="detail">{{ proxima.rotulo }}{% if proxima.acoes %} — {{ proxima.acoes|join(', ') }}{% endif %}</div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<div class="room-filter" id="room-filter">
+  <button type="button" class="chip active" data-filtro="todos">Todos</button>
+  {% for comodo in comodos %}
+  {% if comodo.dispositivos %}
+  <button type="button" class="chip" data-filtro="{{ comodo.nome }}">{{ comodo.nome }}</button>
+  {% endif %}
+  {% endfor %}
+</div>
+
 {% for comodo in comodos %}
   {% if comodo.dispositivos %}
-  <div>
+  <div class="room-section" data-comodo="{{ comodo.nome }}">
     <div class="room-title">{{ comodo.nome }}</div>
     <div class="device-grid">
       {% for d in comodo.dispositivos %}
@@ -20,6 +43,7 @@
           {% if d.tipo in toggle_tipos %}
             {% if d.pode_controlar(usuario_logado) %}
             <form method="post" action="{{ url_for('main.alternar_dispositivo', dispositivo_id=d.id) }}">
+              {{ csrf_field() }}
               <button class="toggle {{ 'on' if d.ativo else 'off' }}" type="submit" aria-label="Alternar {{ d.nome }}">
                 <span class="knob"></span>
               </button>
@@ -55,4 +79,19 @@
     <div style="font-size:15px; font-weight:600;">Ver consumo e custo de energia →</div>
   </div>
 </a>
+
+<script>
+  document.getElementById("room-filter").addEventListener("click", function (ev) {
+    var chip = ev.target.closest(".chip");
+    if (!chip) return;
+
+    this.querySelectorAll(".chip").forEach(function (c) { c.classList.remove("active"); });
+    chip.classList.add("active");
+
+    var filtro = chip.dataset.filtro;
+    document.querySelectorAll(".room-section").forEach(function (secao) {
+      secao.style.display = (filtro === "todos" || secao.dataset.comodo === filtro) ? "" : "none";
+    });
+  });
+</script>
 {% endblock %}

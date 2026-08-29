@@ -25,14 +25,36 @@
     {% endwith %}
 
     <form method="post" action="{{ url_for('auth.login') }}">
+      {{ csrf_field() }}
       <div class="field-label">E-mail</div>
       <input class="field" type="text" name="email" placeholder="admin@casa2050.app" autocomplete="username">
 
       <div class="field-label">Senha</div>
       <input class="field" type="password" name="senha" placeholder="••••••••••" autocomplete="current-password">
 
+      <label style="display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--text-dim); margin-bottom:20px; cursor:pointer;">
+        <input type="checkbox" name="lembrar" value="1" style="margin:0;">
+        Lembrar de mim neste dispositivo
+      </label>
+
       <button class="btn-primary" type="submit">Entrar</button>
     </form>
+
+    <div class="login-divider">OU CONTINUE COMO</div>
+    <div class="login-quick">
+      <form method="post" action="{{ url_for('auth.login') }}">
+        {{ csrf_field() }}
+        <input type="hidden" name="email" value="admin@casa2050.app">
+        <input type="hidden" name="senha" value="admin123">
+        <button class="btn-quick" type="submit">Administrador</button>
+      </form>
+      <form method="post" action="{{ url_for('auth.login') }}">
+        {{ csrf_field() }}
+        <input type="hidden" name="email" value="comum@casa2050.app">
+        <input type="hidden" name="senha" value="comum123">
+        <button class="btn-quick" type="submit">Usuário Comum</button>
+      </form>
+    </div>
 
     <div class="demo-creds">
       Contas de demonstração:<br>

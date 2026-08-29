@@ -21,6 +21,7 @@
 
         {% if dispositivo.pode_controlar(usuario_logado) %}
         <form method="post" action="{{ url_for('main.alternar_dispositivo', dispositivo_id=dispositivo.id) }}">
+          {{ csrf_field() }}
           <button class="toggle {{ 'on' if dispositivo.ativo else 'off' }}" type="submit" style="width:56px; height:30px;">
             <span class="knob" style="width:24px; height:24px;"></span>
           </button>
@@ -32,6 +33,7 @@
 
       {% if dispositivo.tipo == 'luz' %}
       <form method="post" action="{{ url_for('main.ajustar_intensidade', dispositivo_id=dispositivo.id) }}">
+        {{ csrf_field() }}
         <label>Intensidade (1–100)</label><br>
         <input type="number" name="intensidade" min="1" max="100"
                value="{{ dispositivo.atributos_extra.get('intensidade', 100) }}" style="width:100px; margin:8px 0;">
@@ -63,18 +65,31 @@
     <div class="card" style="padding:24px;">
       <div style="font-size:15px; font-weight:600; margin-bottom:16px;">Agendamento</div>
       {% for automacao in automacoes %}
-      <div style="padding:10px 0; border-bottom:1px solid var(--border); font-size:13.5px;">
-        <strong>{{ automacao.nome }}</strong><br>
-        <span style="color:var(--text-faint); font-size:12px;">
-          {{ automacao.horario }} · {{ automacao.dias_semana }}
-          {% for acao in automacao.acoes if acao.dispositivo_id == dispositivo.id %} · {{ acao.acao }}{% endfor %}
-        </span>
+      <div class="automation-row {{ '' if automacao.ativa else 'inativa' }}">
+        <div class="info">
+          <strong>{{ automacao.nome }}</strong>
+          <div class="meta">
+            {{ automacao.horario }} · {{ 'Todos os dias' if automacao.dias_semana == 'todos' else automacao.dias_semana }}
+            {% for acao in automacao.acoes if acao.dispositivo_id == dispositivo.id %} · {{ 'Ligar' if acao.acao == 'ligar' else 'Desligar' }}{% endfor %}
+          </div>
+        </div>
+        {% if dispositivo.pode_controlar(usuario_logado) %}
+        <form method="post" action="{{ url_for('main.alternar_automacao', dispositivo_id=dispositivo.id, automacao_id=automacao.id) }}">
+          {{ csrf_field() }}
+          <button class="toggle small {{ 'on' if automacao.ativa else 'off' }}" type="submit" aria-label="Ativar/desativar {{ automacao.nome }}">
+            <span class="knob"></span>
+          </button>
+        </form>
+        {% else %}
+        <span class="badge {{ 'on' if automacao.ativa else 'off' }}">{{ 'Ativa' if automacao.ativa else 'Inativa' }}</span>
+        {% endif %}
       </div>
       {% else %}
       <div style="font-size:13px; color:var(--text-faint); margin-bottom:12px;">Nenhuma automação ainda.</div>
       {% endfor %}
 
       <form method="post" action="{{ url_for('main.criar_automacao', dispositivo_id=dispositivo.id) }}" style="margin-top:14px; display:flex; flex-direction:column; gap:10px;">
+        {{ csrf_field() }}
         <div>
           <label>Nome</label><br>
           <input type="text" name="nome" placeholder="Acender à noite" style="width:100%; margin-top:4px;">
@@ -104,6 +119,7 @@
         <span style="font-size:13.5px;">Usuário Comum</span>
         {% if usuario_logado.is_admin %}
         <form method="post" action="{{ url_for('main.alternar_permissao', dispositivo_id=dispositivo.id) }}">
+          {{ csrf_field() }}
           <button class="toggle {{ 'on' if dispositivo.controlavel_por_comum else 'off' }}" type="submit">
             <span class="knob"></span>
           </button>

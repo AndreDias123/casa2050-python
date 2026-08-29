@@ -24,7 +24,7 @@ def login():
             flash("Usuário ou senha inválidos.", "erro")
             return render_template("login.html")
 
-        login_user(usuario)
+        login_user(usuario, remember=bool(request.form.get("lembrar")))
         return redirect(url_for("main.dashboard"))
 
     return render_template("login.html")

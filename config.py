@@ -11,6 +11,10 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    # Fuso horário usado para interpretar o "HH:MM" das automações e decidir
+    # o dia da semana atual (ver services/agendador.py).
+    TIMEZONE = os.environ.get("TIMEZONE", "America/Sao_Paulo")
+
     # Configuração opcional de e-mail (relatório semanal de consumo).
     # Se não configurado, o relatório é apenas gerado e salvo no banco
     # (RelatorioEnviado) em vez de enviado de verdade — ver services/relatorios.py.

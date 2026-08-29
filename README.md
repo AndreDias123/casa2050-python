@@ -40,15 +40,17 @@ config.py          configuração (banco, chave secreta, SMTP opcional)
 extensions.py      instâncias do SQLAlchemy e do Flask-Login
 models.py          modelagem de dados (ver abaixo)
 auth.py            blueprint de login/logout
-main.py             blueprint do painel e controle de dispositivos
-energia.py          blueprint do painel de energia e do relatório por e-mail
+main.py            blueprint do painel e controle de dispositivos
+energia.py         blueprint do painel de energia e do relatório por e-mail
 services/
   energia.py       cálculo de kWh/custo a partir do histórico de uso
   relatorios.py     geração (e envio opcional via SMTP) do relatório semanal
+  agendador.py     dispara automações no horário certo (ver seção abaixo)
 templates/          páginas Jinja2 (herdam de base.html)
 static/css/         folha de estilo (mesma identidade visual do protótipo)
-seed.py             popula o banco com cômodos, dispositivos, usuários e uma
-                    semana de histórico de uso sintético
+seed.py             popula o banco com cômodos, dispositivos, usuários,
+                    automações de exemplo e duas semanas de histórico de uso
+                    sintético
 ```
 
 ## Modelagem de dados
@@ -67,11 +69,32 @@ por isso o painel de energia mostra números calculados de verdade, não
 valores fixos.
 
 `Automacao` + `AutomacaoAcao` modelam rotinas (ex.: "acender às 18:30"),
-permitindo que uma automação dispare ações em vários dispositivos.
+permitindo que uma automação dispare ações em vários dispositivos. Elas
+disparam de verdade: `services/agendador.py` sobe um `BackgroundScheduler`
+(APScheduler) junto com o Flask que checa a cada minuto se alguma automação
+ativa bate com o horário e o dia da semana atuais (fuso `TIMEZONE`, padrão
+`America/Sao_Paulo`) e chama `dispositivo.ligar()`/`desligar()` — o mesmo
+código que uma pessoa aciona pelo botão, então o `RegistroUso` gerado
+(`usuario=None`) entra no cálculo de energia normalmente. Cada automação pode
+ser ativada/desativada individualmente na tela do dispositivo, e o painel
+mostra a próxima automação a disparar.
 
 `RelatorioEnviado` guarda um retrato congelado (kWh, custo, tarifa usada)
 de cada relatório gerado, para que um relatório antigo não mude se a tarifa
 mudar depois.
+
+## Painel de energia
+
+Além do consumo e custo do período, o painel compara a semana atual com a
+anterior (variação %), projeta o custo do mês no ritmo atual, e mostra um
+gráfico empilhado do consumo diário por cômodo dos últimos 7 dias. Também
+gera um alerta simples baseado em regra: se algum dispositivo consumiu
+bem mais essa semana que na anterior (acima de um limiar, com uma base de
+comparação mínima pra não disparar em cima de ruído), o painel aponta qual
+e sugere ajustar o agendamento — é a peça que mais materializa a categoria
+INTELLIGENCE no projeto, mesmo sendo uma regra simples e não um modelo de
+ML (não fazia sentido treinar algo em cima do volume de dados de uma casa
+simulada).
 
 ## Permissões
 
@@ -100,13 +123,14 @@ válido, e um warning do SQLAlchemy na geração do relatório.
 
 ## O que ainda é só esqueleto (próximos passos, se sobrar tempo)
 
-- **Automações não disparam sozinhas.** Elas são salvas no banco (CRUD
-  funcionando), mas não há um agendador rodando em segundo plano ainda —
-  daria pra ligar isso com `APScheduler`, chamando `dispositivo.ligar()`/
-  `desligar()` no horário configurado.
 - **Envio de e-mail real** funciona se você configurar `SMTP_HOST`,
   `SMTP_USER` e `SMTP_SENHA` como variáveis de ambiente (veja `config.py`).
   Sem isso, o relatório é gerado e você vê a pré-visualização na tela.
-- Não há proteção CSRF nos formulários (`Flask-WTF` resolveria isso) —
-  não chega a ser um requisito do projeto, mas é uma boa mencionar na
-  arguição individual se perguntarem sobre segurança.
+- **Dias da semana da automação.** O modelo já suporta `dias_semana` (ex.:
+  `"seg,qua,sex"`, interpretado por `services/agendador.py`), mas o
+  formulário de criar automação só permite todo dia — falta o seletor de
+  dias na tela.
+- Os botões "continuar como Administrador/Usuário Comum" na tela de login
+  são propositalmente uma conveniência de demonstração (as mesmas contas já
+  aparecem em texto puro logo abaixo) — não seriam apropriados assim numa
+  aplicação real com contas de verdade.

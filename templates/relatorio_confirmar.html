@@ -12,6 +12,7 @@
     caso contrário, ele só é gerado e salvo para pré-visualização.
   </div>
   <form method="post">
+    {{ csrf_field() }}
     <button class="btn-accent" type="submit">Gerar relatório de {{ usuario_logado.email }}</button>
   </form>
 </div>
