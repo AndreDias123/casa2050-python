@@ -133,6 +133,50 @@ pego pelo smoke test na primeira execução, corrigido na hora.
 
 ---
 
+## Sprint 5 — Conferência contra o edital oficial
+
+**Objetivo:** parar de avaliar o projeto "no olho" e checar item por item
+contra o roteiro oficial da categoria INTELLIGENCE (ExpoTech 2026.2,
+4º semestre CDC) pra garantir que nada estava faltando antes da avaliação
+individual em sala.
+
+**O que o edital pede, literalmente, em "Requisitos do Projeto":**
+modelagem de dados, fluxograma, interface de usuário, validação de dados,
+linguagem (Rust/Python/Java), integração front-end/back-end, autenticação,
+banco relacional, perfis de usuário com permissões distintas. Mais os
+"Conceitos e Critérios Abordados": UX/UI, desenvolvimento na linguagem
+escolhida, POO (classes/herança/polimorfismo/encapsulamento), estratégia
+de estruturas de dados, engenharia de software.
+
+**Gaps encontrados na conferência:**
+- **Fluxograma: ausente por completo.** Item explícito da lista, checkbox
+  literal, nunca foi feito.
+- **Estratégia de estruturas de dados: implícita, não documentada.** O
+  código já fazia escolhas conscientes (dict pra lookup O(1), set pra
+  checagem de dia da semana, ordenação delegada ao banco), mas em lugar
+  nenhum isso estava explicado — se perguntado na arguição individual
+  ("por que um dict aqui?"), não havia resposta preparada por escrito.
+- Todos os outros 8 requisitos e os outros 4 critérios já estavam
+  atendidos pelo trabalho das sprints anteriores.
+
+**Entregas da sprint:**
+- `FLUXOGRAMA.md`: fluxo completo da aplicação em diagrama (Mermaid,
+  renderiza direto no GitHub), cobrindo os dois pontos de entrada de
+  eventos no sistema — uma pessoa pela UI e o agendador rodando sozinho —
+  e todas as checagens de permissão/validação no caminho.
+- `PROCESS.md`: nova seção "Estruturas de dados" justificando cada escolha
+  já existente no código (nenhuma estrutura nova foi criada — só a
+  explicação do porquê de cada uma).
+- `README.md`: linkando os três documentos complementares logo na
+  introdução.
+
+**Nota sobre a regra de equipe (3 a 5 integrantes, avaliação individual):**
+como a nota é individual e qualquer integrante pode ser questionado sobre
+qualquer parte do projeto, os documentos `PROCESS.md`/`SPRINTS.md` viram
+material de estudo real pra equipe toda — não só um registro do que foi
+feito, mas a base pra cada pessoa conseguir explicar qualquer trecho do
+código na arguição, mesmo uma parte que não foi ela quem escreveu.
+
 ## O que aproveitar disso pro próximo projeto do grupo
 
 - **Cadência:** cada sprint acima corresponde a "uma lacuna resolvida por

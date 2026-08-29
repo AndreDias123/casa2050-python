@@ -6,6 +6,11 @@ de dados, POO com herança/polimorfismo, autenticação com dois perfis,
 persistência em banco relacional e um painel de energia calculado a partir
 do histórico real de uso dos dispositivos.
 
+Documentação complementar: [`FLUXOGRAMA.md`](FLUXOGRAMA.md) (fluxo completo
+da aplicação), [`PROCESS.md`](PROCESS.md) (processo de desenvolvimento,
+decisões e estruturas de dados) e [`SPRINTS.md`](SPRINTS.md) (o mesmo
+processo organizado em sprints).
+
 ## Stack
 
 Python 3.10+, Flask, SQLAlchemy (via Flask-SQLAlchemy), Flask-Login, SQLite.
