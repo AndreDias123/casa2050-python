@@ -1,7 +1,8 @@
 # Processo de desenvolvimento — sessão com IA
 
 Este documento registra o processo de duas rodadas de trabalho feitas com
-assistência de IA (Claude Code) em cima do projeto Casa 2050, incluindo o
+assistência de uma IA (apelidada de IAra pelo grupo) em cima do projeto
+Casa 2050, incluindo o
 que foi pedido, as decisões tomadas, os bugs encontrados e como cada coisa
 foi validada. Serve como registro para a arguição individual, mostrando o
 raciocínio por trás de cada mudança — não só o resultado final.
@@ -60,10 +61,10 @@ todas aprovadas para implementação:
 2. **Toggle de automação ativa/inativa** — nova rota `alternar_automacao`
    em `main.py`, respeitando a mesma permissão de controle do dispositivo.
 3. **Comparação semanal + projeção mensal** — no painel de energia.
-4. **Gráfico empilhado de consumo diário por cômodo** — usei o método de
-   visualização de dados do próprio Claude Code (paleta categórica
-   validada contra daltonismo, ordem de cor fixa por cômodo nunca por
-   posição, legenda, marcas com espaçamento consistente).
+4. **Gráfico empilhado de consumo diário por cômodo** — usei um método de
+   visualização de dados (via IAra) com paleta categórica validada
+   contra daltonismo, ordem de cor fixa por cômodo nunca por posição,
+   legenda, marcas com espaçamento consistente.
 5. **Polimento de login/dashboard** — filtro por cômodo (chips + JS puro),
    botões "continuar como Admin/Comum" e "lembrar de mim".
 6. **Proteção CSRF** — `Flask-WTF` em todos os 8 formulários POST do app.
