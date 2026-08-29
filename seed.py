@@ -50,9 +50,9 @@ def seed():
         db.create_all()
 
         # --- usuários ---
-        admin = Usuario(nome="André", email="admin@casa2050.app", perfil="administrador")
+        admin = Usuario(nome="André", email="admin@pulse2050.app", perfil="administrador")
         admin.set_senha("admin123")
-        comum = Usuario(nome="Visitante", email="comum@casa2050.app", perfil="usuario_comum")
+        comum = Usuario(nome="Visitante", email="comum@pulse2050.app", perfil="usuario_comum")
         comum.set_senha("comum123")
         db.session.add_all([admin, comum])
 
@@ -152,9 +152,9 @@ def seed():
 
         db.session.commit()
 
-        print("Banco criado e populado em casa2050.db")
-        print("  Administrador: admin@casa2050.app / admin123")
-        print("  Usuário comum: comum@casa2050.app / comum123")
+        print("Banco criado e populado em pulse2050.db")
+        print("  Administrador: admin@pulse2050.app / admin123")
+        print("  Usuário comum: comum@pulse2050.app / comum123")
 
 
 if __name__ == "__main__":

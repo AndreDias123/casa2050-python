@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Entrar — Casa 2050{% endblock %}
+{% block title %}Entrar — PULSE2050{% endblock %}
 {% block guest_content %}
 <div class="login-wrap">
   <div class="login-card">
@@ -8,7 +8,7 @@
         <path d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"/><path d="M8.5 12 L11 14.5 L15.5 9.5"/>
       </svg>
       <div>
-        <div class="name">CASA 2050</div>
+        <div class="name">PULSE2050</div>
         <div class="sub">SISTEMA INTELIGENTE</div>
       </div>
     </div>
@@ -27,7 +27,7 @@
     <form method="post" action="{{ url_for('auth.login') }}">
       {{ csrf_field() }}
       <div class="field-label">E-mail</div>
-      <input class="field" type="text" name="email" placeholder="admin@casa2050.app" autocomplete="username">
+      <input class="field" type="text" name="email" placeholder="admin@pulse2050.app" autocomplete="username">
 
       <div class="field-label">Senha</div>
       <input class="field" type="password" name="senha" placeholder="••••••••••" autocomplete="current-password">
@@ -44,13 +44,13 @@
     <div class="login-quick">
       <form method="post" action="{{ url_for('auth.login') }}">
         {{ csrf_field() }}
-        <input type="hidden" name="email" value="admin@casa2050.app">
+        <input type="hidden" name="email" value="admin@pulse2050.app">
         <input type="hidden" name="senha" value="admin123">
         <button class="btn-quick" type="submit">Administrador</button>
       </form>
       <form method="post" action="{{ url_for('auth.login') }}">
         {{ csrf_field() }}
-        <input type="hidden" name="email" value="comum@casa2050.app">
+        <input type="hidden" name="email" value="comum@pulse2050.app">
         <input type="hidden" name="senha" value="comum123">
         <button class="btn-quick" type="submit">Usuário Comum</button>
       </form>
@@ -58,8 +58,8 @@
 
     <div class="demo-creds">
       Contas de demonstração:<br>
-      Administrador — admin@casa2050.app / admin123<br>
-      Usuário Comum — comum@casa2050.app / comum123
+      Administrador — admin@pulse2050.app / admin123<br>
+      Usuário Comum — comum@pulse2050.app / comum123
     </div>
   </div>
 </div>

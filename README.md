@@ -1,4 +1,4 @@
-# Casa 2050 — Sistema Inteligente
+# PULSE2050 — Sistema Inteligente
 
 Projeto do 4º semestre de Ciência da Computação (ExpoTech 2026.2 · Missão 2050,
 categoria INTELLIGENCE) — arquitetura completa de uma smart home: modelagem
@@ -22,7 +22,7 @@ python -m venv .venv
 source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 
-python seed.py                   # cria o banco (casa2050.db) e popula com dados de exemplo
+python seed.py                   # cria o banco (pulse2050.db) e popula com dados de exemplo
 python app.py                    # sobe o servidor em http://localhost:5000
 ```
 
@@ -31,8 +31,8 @@ Abra `http://localhost:5000` e entre com uma das contas de demonstração
 
 | Perfil            | E-mail                | Senha      |
 |--------------------|------------------------|-----------|
-| Administrador      | admin@casa2050.app     | admin123  |
-| Usuário Comum       | comum@casa2050.app     | comum123  |
+| Administrador      | admin@pulse2050.app     | admin123  |
+| Usuário Comum       | comum@pulse2050.app     | comum123  |
 
 Se quiser recomeçar do zero (apagar tudo e repopular), rode `python seed.py`
 de novo — ele derruba e recria as tabelas.

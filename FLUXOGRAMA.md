@@ -1,6 +1,6 @@
 # Fluxograma da aplicação
 
-Fluxo completo do Casa 2050, das duas entradas do sistema (uma pessoa
+Fluxo completo do PULSE2050, das duas entradas do sistema (uma pessoa
 usando a interface, e o agendador rodando sozinho em segundo plano) até os
 efeitos finais no banco de dados.
 

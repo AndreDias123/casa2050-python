@@ -1,6 +1,6 @@
 # Sprints do projeto
 
-Organização retrospectiva do desenvolvimento do Casa 2050 em formato de
+Organização retrospectiva do desenvolvimento do PULSE2050 em formato de
 sprint — não é material de entrega da disciplina, é um registro de estudo
 pra revisar como o projeto evoluiu e servir de referência de processo pro
 próximo projeto do grupo.
@@ -33,7 +33,7 @@ de qualquer sprint de melhoria.
 automações não disparam sozinhas · sem proteção CSRF · e-mail depende de
 SMTP configurado.
 
-**Commit:** `Estado inicial: Casa 2050 - sistema inteligente de casa conectada`
+**Commit:** `Estado inicial: PULSE2050 - sistema inteligente de casa conectada`
 
 ---
 
@@ -122,7 +122,7 @@ pego pelo smoke test na primeira execução, corrigido na hora.
 **Entregas:**
 - `PROCESS.md`: relato do processo de desenvolvimento (decisões, bugs
   encontrados/corrigidos, como cada coisa foi validada).
-- `.gitignore` (exclui `.venv/`, `__pycache__/`, `casa2050.db`).
+- `.gitignore` (exclui `.venv/`, `__pycache__/`, `pulse2050.db`).
 - Repositório Git inicializado e publicado no GitHub.
 - Este arquivo (`SPRINTS.md`), organizando o processo em formato de sprint
   pra servir de referência de metodologia.

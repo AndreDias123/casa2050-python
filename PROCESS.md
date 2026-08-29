@@ -2,7 +2,7 @@
 
 Este documento registra o processo de duas rodadas de trabalho feitas com
 assistência de uma IA (apelidada de IAra pelo grupo) em cima do projeto
-Casa 2050, incluindo o
+PULSE2050, incluindo o
 que foi pedido, as decisões tomadas, os bugs encontrados e como cada coisa
 foi validada. Serve como registro para a arguição individual, mostrando o
 raciocínio por trás de cada mudança — não só o resultado final.

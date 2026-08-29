@@ -59,7 +59,7 @@ def _tentar_enviar_email(usuario, html):
         return False
 
     msg = MIMEMultipart("alternative")
-    msg["Subject"] = "Seu resumo semanal de energia — Casa 2050"
+    msg["Subject"] = "Seu resumo semanal de energia — PULSE2050"
     msg["From"] = cfg["SMTP_REMETENTE"]
     msg["To"] = usuario.email
     msg.attach(MIMEText(html, "html"))

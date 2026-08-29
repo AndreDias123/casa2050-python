@@ -32,7 +32,7 @@ def main():
     check("login invalido nao autentica", b"login" in r.request.path.encode() or r.status_code == 200)
 
     # 3. Login admin
-    r = client.post("/login", data={"email": "admin@casa2050.app", "senha": "admin123"}, follow_redirects=True)
+    r = client.post("/login", data={"email": "admin@pulse2050.app", "senha": "admin123"}, follow_redirects=True)
     check("login admin", r.status_code == 200 and r.request.path == "/", f"path={r.request.path}")
 
     # 4. Dashboard renderiza e mostra dispositivos
@@ -97,7 +97,7 @@ def main():
     check("dashboard sem login redireciona", r.status_code in (301, 302), f"status={r.status_code}")
 
     # 12. Login usuário comum + testar permissão em dispositivo não liberado
-    r = client.post("/login", data={"email": "comum@casa2050.app", "senha": "comum123"}, follow_redirects=True)
+    r = client.post("/login", data={"email": "comum@pulse2050.app", "senha": "comum123"}, follow_redirects=True)
     check("login usuario comum", r.status_code == 200)
 
     with app.app_context():

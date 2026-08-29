@@ -2,5 +2,5 @@ __pycache__/
 *.pyc
 .venv/
 venv/
-casa2050.db
+pulse2050.db
 .env

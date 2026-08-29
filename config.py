@@ -7,7 +7,7 @@ class Config:
     # Em produção, defina SECRET_KEY como variável de ambiente.
     SECRET_KEY = os.environ.get("SECRET_KEY", "chave-de-desenvolvimento-troque-em-producao")
     SQLALCHEMY_DATABASE_URI = os.environ.get(
-        "DATABASE_URL", "sqlite:///" + os.path.join(BASE_DIR, "casa2050.db")
+        "DATABASE_URL", "sqlite:///" + os.path.join(BASE_DIR, "pulse2050.db")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
@@ -22,4 +22,4 @@ class Config:
     SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
     SMTP_USER = os.environ.get("SMTP_USER")
     SMTP_SENHA = os.environ.get("SMTP_SENHA")
-    SMTP_REMETENTE = os.environ.get("SMTP_REMETENTE", "relatorios@casa2050.app")
+    SMTP_REMETENTE = os.environ.get("SMTP_REMETENTE", "relatorios@pulse2050.app")

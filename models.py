@@ -1,5 +1,5 @@
 """
-Modelagem de dados da Casa 2050.
+Modelagem de dados da PULSE2050.
 
 Mapeamento das entidades para o SQLAlchemy usando Single Table Inheritance
 para `Dispositivo`: uma única tabela `dispositivos`, discriminada pela coluna
