@@ -1,15 +1,3 @@
-# Sprints do projeto
-
-Organização retrospectiva do desenvolvimento do PULSE2050 em formato de
-sprint — não é material de entrega da disciplina, é um registro de estudo
-pra revisar como o projeto evoluiu e servir de referência de processo pro
-próximo projeto do grupo.
-
-Cada sprint corresponde a um bloco real de trabalho (não datas fixas de
-calendário) e referencia o commit em que o resultado ficou registrado.
-
----
-
 ## Sprint 0 — Base do projeto
 
 **Objetivo:** ter a arquitetura principal da smart home funcionando antes
