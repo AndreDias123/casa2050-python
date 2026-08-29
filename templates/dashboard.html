@@ -21,6 +21,13 @@
 </div>
 {% endif %}
 
+<div class="room-filter" id="view-toggle">
+  <button type="button" class="chip active" id="tab-view-cards">Cards</button>
+  <button type="button" class="chip" id="tab-view-3d">Maquete 3D</button>
+</div>
+
+<div id="view-cards">
+
 <div class="room-filter" id="room-filter">
   <button type="button" class="chip active" data-filtro="todos">Todos</button>
   {% for comodo in comodos %}
@@ -80,6 +87,47 @@
   </div>
 </a>
 
+</div>
+
+<div id="view-3d" hidden>
+  <div class="card" style="padding:8px;">
+    <div class="iso3d-wrap" id="iso3d-wrap">
+      <div class="iso3d-loading" id="iso3d-loading">
+        <svg class="mark" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 L21 7 V17 L12 22 L3 17 V7 Z"/><path d="M8.5 12 L11 14.5 L15.5 9.5"/></svg>
+        <div class="txt">CARREGANDO A MAQUETE 3D…</div>
+      </div>
+      <div id="iso3d-app"></div>
+
+      <div class="iso3d-hud iso3d-top">
+        <div class="iso3d-tag"><span class="dot"></span><span id="iso3d-room">Vista aérea</span></div>
+        <div class="iso3d-counter"><b id="iso3d-count-on">0</b> de <span id="iso3d-count-total">0</span> dispositivos ativos</div>
+      </div>
+
+      <div class="iso3d-toast" id="iso3d-toast">
+        <div class="n" id="iso3d-toast-name">—</div>
+        <div class="s" id="iso3d-toast-state">—</div>
+      </div>
+
+      <div class="iso3d-hud iso3d-controls">
+        <button class="ibtn" id="iso3d-play" aria-label="Pausar tour">
+          <svg id="iso3d-play-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4 L20 12 L6 20 Z"/></svg>
+          <svg id="iso3d-pause-icon" width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><rect x="5" y="4" width="5" height="16"/><rect x="14" y="4" width="5" height="16"/></svg>
+        </button>
+        <div class="iso3d-track"><div class="iso3d-fill" id="iso3d-fill"></div></div>
+        <button class="ibtn ghost" id="iso3d-restart" aria-label="Reiniciar tour">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12 a9 9 0 1 1 3 6.7"/><path d="M3 12 V6 M3 12 H9"/></svg>
+        </button>
+        <button class="iso3d-free" id="iso3d-freetoggle">Controle livre</button>
+      </div>
+    </div>
+    <div style="font-size:11.5px; color:var(--text-faint); padding:12px 10px 4px;">
+      Clique num dispositivo pra ligar/desligar de verdade — chama a mesma rota que os cards usam. Automação e outras abas também aparecem aqui em poucos segundos.
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="dispositivos3d-data">{{ dispositivos_3d | tojson }}</script>
+
 <script>
   document.getElementById("room-filter").addEventListener("click", function (ev) {
     var chip = ev.target.closest(".chip");
@@ -93,5 +141,43 @@
       secao.style.display = (filtro === "todos" || secao.dataset.comodo === filtro) ? "" : "none";
     });
   });
+
+  (function () {
+    var tabCards = document.getElementById("tab-view-cards");
+    var tabIso = document.getElementById("tab-view-3d");
+    var viewCards = document.getElementById("view-cards");
+    var view3d = document.getElementById("view-3d");
+    var iniciado3d = false;
+
+    function carregarScript(src, cb) {
+      var s = document.createElement("script");
+      s.src = src;
+      s.onload = cb;
+      document.body.appendChild(s);
+    }
+
+    function mostrarView(view) {
+      var is3d = view === "3d";
+      viewCards.hidden = is3d;
+      view3d.hidden = !is3d;
+      tabIso.classList.toggle("active", is3d);
+      tabCards.classList.toggle("active", !is3d);
+
+      if (is3d && !iniciado3d) {
+        iniciado3d = true;
+        carregarScript("https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js", function () {
+          carregarScript("https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js", function () {
+            var dispositivos = JSON.parse(document.getElementById("dispositivos3d-data").textContent);
+            var csrfToken = document.querySelector('meta[name="csrf-token"]').content;
+            window.iniciarCasa3D({ dispositivos: dispositivos, csrfToken: csrfToken });
+          });
+        });
+      }
+    }
+
+    tabCards.addEventListener("click", function () { mostrarView("cards"); });
+    tabIso.addEventListener("click", function () { mostrarView("3d"); });
+  })();
 </script>
+<script src="{{ url_for('static', filename='js/casa3d.js') }}" defer></script>
 {% endblock %}

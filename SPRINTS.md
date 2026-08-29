@@ -165,6 +165,48 @@ material de estudo real pra equipe toda — não só um registro do que foi
 feito, mas a base pra cada pessoa conseguir explicar qualquer trecho do
 código na arguição, mesmo uma parte que não foi ela quem escreveu.
 
+## Sprint 6 — Maquete 3D interativa e integrada
+
+**Objetivo:** dar ao projeto um diferencial visual de verdade — não só um
+mockup pra mostrar a ideia, mas uma segunda forma de controlar a casa,
+dentro do próprio painel, ligada ao banco de dados de verdade.
+
+**Caminho até aqui (três protótipos, um final):**
+1. Mockup em Artifact de uma planta isométrica (2.5D) clicável, pra validar
+   se "clicar num ícone e ver a casa reagir" valia o esforço antes de
+   construir de verdade.
+2. Um tour 3D em Three.js (câmera automática passeando pela casa) — bonito,
+   mas sem interação nenhuma ainda.
+3. Os dois combinados: a cena 3D do tour ganhou os gatilhos clicáveis do
+   mockup isométrico — luzes, TV, robô aspirador, porta da garagem etc.,
+   todos reagindo a clique.
+
+**Depois disso, integração de verdade com o Flask:**
+- Nova aba "Maquete 3D" no dashboard, ao lado dos cards — carrega a cena só
+  quando aberta pela primeira vez.
+- Clicar num dispositivo na cena chama a mesma rota
+  `/dispositivo/<id>/alternar` que os cards já usavam — mesma permissão,
+  mesmo registro de uso, sem lógica duplicada.
+- Nova rota `GET /api/dispositivos` (JSON) que a maquete consulta a cada 5
+  segundos, pra pegar mudanças feitas pelo agendador ou por outra aba sem
+  precisar recarregar a página.
+
+**Entregas:**
+- `static/js/casa3d.js` — a cena 3D, conectada ao banco.
+- `main.py` — rota `/api/dispositivos` e os dados da maquete no contexto
+  do dashboard.
+- `templates/dashboard.html` — aba nova, carregamento sob demanda das
+  bibliotecas do Three.js.
+- `templates/base.html` — meta tag com o token CSRF, pra chamadas AJAX.
+- `README.md`/`PROCESS.md` — documentando a decisão de reaproveitar a rota
+  de toggle existente em vez de duplicar lógica, e o poll em vez de
+  WebSocket.
+
+**Validado por:** smoke test (24/24) e teste manual via `curl` reproduzindo
+exatamente a chamada que o clique na maquete faz (POST com o header
+`X-CSRFToken`), confirmando pela API que o dispositivo mudou de estado no
+banco de verdade.
+
 ## O que aproveitar disso pro próximo projeto do grupo
 
 - **Cadência:** cada sprint acima corresponde a "uma lacuna resolvida por

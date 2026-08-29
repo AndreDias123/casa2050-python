@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, current_app
+from flask import Blueprint, render_template, redirect, url_for, request, flash, abort, current_app, jsonify
 from flask_login import login_required, current_user
 
 from extensions import db
@@ -31,10 +31,28 @@ def dashboard():
             ],
         }
 
+    dispositivos_3d = [
+        {"id": d.id, "nome": d.nome, "ativo": d.ativo, "pode_controlar": d.pode_controlar(current_user)}
+        for c in comodos for d in c.dispositivos
+    ]
+
     return render_template(
         "dashboard.html", comodos=comodos, total_dispositivos=total_dispositivos, ativos=ativos,
-        proxima=proxima,
+        proxima=proxima, dispositivos_3d=dispositivos_3d,
     )
+
+
+@bp.route("/api/dispositivos")
+@login_required
+def api_dispositivos():
+    """Estado atual dos dispositivos, em JSON — usado pela maquete 3D pra se
+    manter sincronizada com o banco (poll), inclusive quando quem mudou o
+    estado foi o agendador ou outra aba, não um clique na própria maquete."""
+    dispositivos = Dispositivo.query.all()
+    return jsonify([
+        {"id": d.id, "nome": d.nome, "ativo": d.ativo, "pode_controlar": d.pode_controlar(current_user)}
+        for d in dispositivos
+    ])
 
 
 def _get_dispositivo_ou_404(dispositivo_id):

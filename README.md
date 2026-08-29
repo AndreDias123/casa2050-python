@@ -45,7 +45,7 @@ config.py          configuração (banco, chave secreta, SMTP opcional)
 extensions.py      instâncias do SQLAlchemy e do Flask-Login
 models.py          modelagem de dados (ver abaixo)
 auth.py            blueprint de login/logout
-main.py            blueprint do painel e controle de dispositivos
+main.py            blueprint do painel, controle de dispositivos e API da maquete 3D
 energia.py         blueprint do painel de energia e do relatório por e-mail
 services/
   energia.py       cálculo de kWh/custo a partir do histórico de uso
@@ -53,6 +53,7 @@ services/
   agendador.py     dispara automações no horário certo (ver seção abaixo)
 templates/          páginas Jinja2 (herdam de base.html)
 static/css/         folha de estilo (mesma identidade visual do protótipo)
+static/js/casa3d.js cena 3D interativa da maquete (ver seção abaixo)
 seed.py             popula o banco com cômodos, dispositivos, usuários,
                     automações de exemplo e duas semanas de histórico de uso
                     sintético
@@ -100,6 +101,26 @@ e sugere ajustar o agendamento — é a peça que mais materializa a categoria
 INTELLIGENCE no projeto, mesmo sendo uma regra simples e não um modelo de
 ML (não fazia sentido treinar algo em cima do volume de dados de uma casa
 simulada).
+
+## Maquete 3D
+
+O dashboard tem uma segunda aba, "Maquete 3D" (`static/js/casa3d.js`, Three.js
+via CDN, carregado só quando a aba é aberta pela primeira vez — não pesa no
+carregamento normal do painel). É uma cena 3D navegável da casa com um tour
+automático de câmera, onde os 10 dispositivos modelados (mapeados por nome
+exato) são clicáveis de verdade:
+
+- **Clicar chama a mesma rota** `/dispositivo/<id>/alternar` que os cards
+  usam — mesma checagem de `pode_controlar()`, mesmo `RegistroUso` gerado.
+  Não existe um caminho especial pra maquete; ela é só outra interface pra
+  cima da mesma lógica de negócio.
+- **`GET /api/dispositivos`** devolve o estado atual de todos os
+  dispositivos em JSON. A maquete consulta essa rota a cada 5 segundos, então
+  uma automação disparando sozinha, ou alguém mexendo pelos cards em outra
+  aba, aparece na cena sem precisar recarregar a página.
+- Luzes acendem/apagam de verdade (intensidade da `PointLight` + material
+  emissivo), a porta da garagem desliza ao abrir, o robô aspirador sai
+  andando quando ativado.
 
 ## Permissões
 

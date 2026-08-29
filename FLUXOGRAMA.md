@@ -25,6 +25,11 @@ flowchart TD
     Escolhe -- abrir dispositivo --> Detalhe[/Detalhe do dispositivo/]
     Escolhe -- ver energia --> Energia
     Escolhe -- alternar dispositivo direto no card --> PermToggle
+    Escolhe -- abrir aba Maquete 3D --> Maquete3D
+
+    Maquete3D[/Maquete 3D: cena Three.js/] --> Clique3D{Clicou num\ndispositivo\nmodelado?}
+    Clique3D -- não --> Maquete3D
+    Clique3D -- sim --> PermToggle
 
     Detalhe --> AcaoDet{Ação}
 
@@ -85,6 +90,15 @@ flowchart TD
     Registra3 -.alimenta.-> Calc
     Registra1 -.alimenta.-> Calc
     Registra2 -.alimenta.-> Calc
+
+    subgraph POLL [Enquanto a Maquete 3D estiver aberta]
+        direction TB
+        PollTick([Timer 5s]) --> Consulta[GET /api/dispositivos]
+        Consulta --> Diff{Algum ativo\nmudou desde\no último poll?}
+        Diff -- não --> PollTick
+        Diff -- sim --> AtualizaCena[Atualiza a cena 3D + toast]
+        AtualizaCena --> PollTick
+    end
 ```
 
 ## Como ler
@@ -100,3 +114,10 @@ flowchart TD
 - **Toda entrada de formulário é validada antes de tocar no banco** —
   intensidade (dígito 1-100), horário da automação (HH:MM válido),
   credenciais de login.
+- **A Maquete 3D não tem lógica própria de controle** — um clique nela cai
+  no mesmo `PermToggle` que os cards usam, então a regra de permissão e o
+  `RegistroUso` gerado são idênticos, só a interface é diferente. O `POLL`
+  em paralelo é o que permite a maquete refletir uma automação disparando
+  sozinha (ou alguém mexendo em outra aba) sem precisar recarregar a
+  página — ela lê o mesmo estado que qualquer um dos três `RegistroUso`
+  do fluxo principal deixou no banco.

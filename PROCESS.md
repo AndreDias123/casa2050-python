@@ -133,6 +133,49 @@ prontas foi uma escolha deliberada, não a primeira coisa que funcionou:
   inteiro de uma vez (que é a consulta mais frequente do sistema, tanto no
   dashboard quanto no calculo de energia).
 
+## Rodada 3 — Maquete 3D interativa e integrada
+
+**Pedido:** um diferencial visual pro projeto — inicialmente cogitamos 3D de
+verdade, decidimos que o risco/esforço não compensava e fizemos uma planta
+isométrica (2.5D) como mockup pra validar a ideia dos "gatilhos" (clicar num
+ícone liga/desliga o dispositivo, com feedback visual). O mockup agradou, e
+a partir de um protótipo 3D à parte (Three.js, tour de câmera automático
+pela casa) que já existia, juntamos as duas coisas: a cena 3D de verdade +
+os gatilhos clicáveis — e depois conectamos isso ao Flask de verdade.
+
+**Decisão de arquitetura pra integração:**
+- **Reaproveitar a rota de toggle existente** (`/dispositivo/<id>/alternar`)
+  em vez de criar uma rota nova só pra maquete — a mesma checagem de
+  permissão, o mesmo `RegistroUso`, sem duplicar lógica de negócio. A
+  chamada via `fetch` usa o token CSRF pelo header `X-CSRFToken` (o
+  Flask-WTF já aceita isso por padrão, `WTF_CSRF_HEADERS`), então não
+  precisou mudar a rota nem desligar proteção nenhuma pra AJAX funcionar.
+- **Mapeamento por nome, não por tipo genérico.** A cena 3D é uma casa
+  específica desenhada à mão (não gerada a partir de uma lista arbitrária
+  de dispositivos), então o `casa3d.js` mapeia por nome exato ("Luz da
+  Sala" → objeto 3D da luz da sala). Só 10 dos 13 dispositivos do seed têm
+  um objeto correspondente na cena — os outros três (Câmera da Sala,
+  Geladeira, Luz da Garagem) ficaram de fora por não terem objeto
+  modelado ainda, não por limitação técnica.
+- **Poll em vez de WebSocket.** Pra maquete pegar mudanças feitas pelo
+  agendador ou por outra aba, precisava de alguma forma de sincronizar sem
+  recarregar a página. Um `GET /api/dispositivos` consultado a cada 5
+  segundos resolve isso com uma rota JSON simples, sem adicionar
+  Flask-SocketIO nem infraestrutura nova — troca "tempo real de verdade"
+  por "atualiza em até 5 segundos", aceitável pro que o projeto precisa.
+- **Carregamento sob demanda.** As bibliotecas do Three.js (CDN) só são
+  injetadas no DOM quando a aba "Maquete 3D" é aberta pela primeira vez —
+  visitar o dashboard normalmente não paga o custo de carregar uma engine
+  3D que a pessoa pode nunca abrir.
+
+**Validado por:** smoke test (24/24, nada quebrou), e depois testes manuais
+via `curl` simulando exatamente o que o clique na maquete faz — POST na
+rota de toggle com o header `X-CSRFToken`, confirmando pela API que o
+`ativo` do dispositivo mudou de verdade no banco. O clique dentro do
+navegador (WebGL) em si não foi testado por aqui — não tem como rodar um
+navegador de verdade neste ambiente — mas a lógica do clique é a mesma do
+protótipo em Artifact que já tinha sido conferida visualmente antes.
+
 ## Como rodar
 
 Ver `README.md` — nada mudou no fluxo (`pip install -r requirements.txt`,

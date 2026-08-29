@@ -222,6 +222,69 @@ label { font-size: 12.5px; color: var(--text-dim); font-weight: 600; }
 }
 .chip.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
 
+/* ---------- maquete 3D (aba do dashboard) ---------- */
+.iso3d-wrap {
+  position: relative; width: 100%; height: min(70vh, 640px); min-height: 420px;
+  border-radius: 14px; overflow: hidden; background: #05070c;
+}
+.iso3d-wrap canvas { display: block; width: 100%; height: 100%; }
+.iso3d-hud { position: absolute; z-index: 2; color: #ffffff; pointer-events: none; font-family: 'Manrope', sans-serif; }
+.iso3d-hud * { pointer-events: auto; }
+
+.iso3d-top { top: 16px; left: 16px; right: 16px; display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.iso3d-tag {
+  background: rgba(13,13,13,0.6); border: 1px solid rgba(45,216,207,0.4); backdrop-filter: blur(10px);
+  border-radius: 999px; padding: 8px 16px 8px 12px; display: flex; align-items: center; gap: 8px;
+  font-size: 12px; font-weight: 600;
+}
+.iso3d-tag .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+.iso3d-counter {
+  background: rgba(13,13,13,0.6); border: 1px solid rgba(255,255,255,0.14); backdrop-filter: blur(10px);
+  border-radius: 999px; padding: 7px 14px; font-size: 11px; color: #cfcec8; font-variant-numeric: tabular-nums;
+}
+.iso3d-counter b { color: var(--accent); }
+
+.iso3d-toast {
+  position: absolute; top: 60px; right: 16px; z-index: 2; max-width: 220px;
+  background: rgba(13,13,13,0.75); border: 1px solid rgba(45,216,207,0.45); backdrop-filter: blur(10px);
+  border-radius: 12px; padding: 9px 13px; font-size: 11.5px; color: #ffffff;
+  opacity: 0; transform: translateY(-6px); transition: opacity .2s ease, transform .2s ease; pointer-events: none;
+}
+.iso3d-toast.show { opacity: 1; transform: translateY(0); }
+.iso3d-toast .n { font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+.iso3d-toast .s { color: #9b9a94; margin-top: 2px; }
+.iso3d-toast .s.on { color: var(--accent); }
+
+.iso3d-controls {
+  position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); z-index: 2;
+  background: rgba(13,13,13,0.62); border: 1px solid rgba(255,255,255,0.12); backdrop-filter: blur(12px);
+  border-radius: 999px; display: flex; align-items: center; gap: 12px; padding: 8px 12px 8px 8px;
+  width: min(460px, 90%);
+}
+.iso3d-controls .ibtn {
+  width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--accent); color: #04211f; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.iso3d-controls .ibtn.ghost { background: transparent; border: 1px solid rgba(255,255,255,0.22); color: #e7e6e2; width: 30px; height: 30px; }
+.iso3d-track { flex: 1; height: 4px; border-radius: 999px; background: rgba(255,255,255,0.14); overflow: hidden; }
+.iso3d-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 999px; }
+.iso3d-free {
+  font-size: 11px; font-weight: 700; border-radius: 999px; padding: 0 12px; height: 30px; white-space: nowrap;
+  border: 1px solid rgba(255,255,255,0.22); background: transparent; color: #e7e6e2; cursor: pointer; font-family: inherit;
+}
+.iso3d-free.active { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+.iso3d-loading {
+  position: absolute; inset: 0; z-index: 3; background: #05070c;
+  display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px;
+  transition: opacity .4s ease;
+}
+.iso3d-loading .txt { font-family: 'Space Grotesk', sans-serif; font-size: 12px; color: #9b9a94; letter-spacing: .04em; }
+@media (prefers-reduced-motion: no-preference) {
+  .iso3d-loading .mark { animation: iso3d-pulse 1.6s ease-in-out infinite; }
+}
+@keyframes iso3d-pulse { 0%, 100% { opacity: .35; } 50% { opacity: 1; } }
+
 /* ---------- login: entrar como (demo) ---------- */
 .login-divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 14px; font-size: 10.5px; letter-spacing: .06em; color: var(--text-faint); }
 .login-divider::before, .login-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
