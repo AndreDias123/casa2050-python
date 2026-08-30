@@ -1,7 +1,8 @@
 /**
  * Maquete 3D do dashboard — mesma cena Three.js do protótipo "Tour 3D",
- * agora conectada ao banco de verdade: os 10 dispositivos modelados
- * (mapeados por nome, ver NAME_TO_SCENE) refletem dispositivo.ativo ao
+ * agora conectada ao banco de verdade: os 13 dispositivos do seed têm
+ * objeto correspondente na cena (mapeados por nome, ver NAME_TO_SCENE) e
+ * refletem dispositivo.ativo ao
  * carregar, clicar chama a mesma rota POST /dispositivo/<id>/alternar que
  * o resto do app usa, e um poll periódico em /api/dispositivos pega
  * mudanças feitas pelo agendador ou por outra aba/pessoa.
@@ -22,7 +23,10 @@ window.iniciarCasa3D = function (opts) {
     "Janela do Quarto": "janela-quarto",
     "Porta da Garagem": "porta-garagem",
     "Luz Externa": "luz-externa",
-    "Câmera Externa": "camera-externa"
+    "Câmera Externa": "camera-externa",
+    "Câmera da Sala": "camera-sala",
+    "Geladeira": "geladeira",
+    "Luz da Garagem": "luz-garagem"
   };
 
   opts.deviceMap = {};
@@ -155,10 +159,12 @@ window.iniciarCasa3D = function (opts) {
   place(box(0.9, 0.06, 0.9, 0x120f0c), -6.0, 0.03, -2.4);
   var salaLamp = new THREE.PointLight(WARM, 0.6, 8, 2); salaLamp.position.set(-5.2, 1.7, -1.2); scene.add(salaLamp);
   var salaBulb = place(orb(0.09, WARM, { emissiveIntensity: 0.9 }), -5.2, 1.7, -1.2);
+  var salaCamHead = place(box(0.28, 0.16, 0.16, 0x18181a, { roughness: 0.4 }), -7.75, 2.28, -5.55, Math.PI * 0.2);
+  var salaCamLed = place(box(0.04, 0.04, 0.04, 0xff4d4d, { emissive: 0xff4d4d, emissiveIntensity: 1.5, castShadow: false }), -7.85, 2.3, -5.48);
 
   place(box(6.4, 0.9, 0.7, 0x342c24), -4.6, 0.45, 5.55);
   place(box(6.4, 0.5, 0.6, 0x241f1a), -4.6, 2.15, 5.6);
-  place(box(0.85, 1.9, 0.72, 0x1c1c1c, { metalness: 0.3, roughness: 0.4 }), -7.4, 0.95, 1.2);
+  var geladeiraMesh = place(box(0.85, 1.9, 0.72, 0x1c1c1c, { metalness: 0.3, roughness: 0.4, emissive: ACCENT, emissiveIntensity: 0 }), -7.4, 0.95, 1.2);
   var kitchenStrip = place(box(0.05, 1.5, 0.05, ACCENT, { emissive: ACCENT, emissiveIntensity: 1.1, castShadow: false }), -6.98, 0.95, 1.2);
   place(box(1.1, 0.75, 1.1, 0x2c2620), -1.6, 0.38, 4.3);
   var kitLamp = new THREE.PointLight(0xfff2d9, 0.5, 7, 2); kitLamp.position.set(-4.6, 2.3, 3.5); scene.add(kitLamp);
@@ -183,6 +189,9 @@ window.iniciarCasa3D = function (opts) {
   place(box(1.7, 0.5, 1.35, 0x161c26, { metalness: 0.5, roughness: 0.35 }), -11, 0.92, -2.6);
   [[-12.5,-3.7],[-9.5,-3.7],[-12.5,-1.5],[-9.5,-1.5]].forEach(function (p) { place(box(0.32, 0.32, 0.18, 0x0c0c0c, { roughness: 0.7 }), p[0], 0.16, p[1]); });
   place(box(0.4, 1.8, 1.6, 0x241f1a), -13.4, 0.9, -1.2);
+  var garageFixture = place(box(0.5, 0.08, 0.2, 0xd7d2c4, { roughness: 0.6, castShadow: false }), -11, WALL_H - 0.15, -3);
+  var garageBulb = place(orb(0.09, 0xfff2d9, { emissiveIntensity: 0.8 }), -11, WALL_H - 0.24, -3);
+  var garageLamp = new THREE.PointLight(0xfff2d9, 0.7, 9, 2); garageLamp.position.set(-11, WALL_H - 0.3, -3); scene.add(garageLamp);
 
   var post = place(box(0.12, 3, 0.12, 0x2a2a2a), -6.3, 1.5, -10.5);
   var postBulb = place(box(0.28, 0.28, 0.28, WARM, { emissive: WARM, emissiveIntensity: 1.1, castShadow: false }), -6.3, 3.05, -10.5);
@@ -198,7 +207,7 @@ window.iniciarCasa3D = function (opts) {
   }
   foliage(-9.5, -11, 1.4); foliage(3, -11.5, 1.1); foliage(6.5, -9.5, 0.9);
 
-  var robotActive = false, camActive = true;
+  var robotActive = false, camActive = true, camSalaActive = true;
   registerDevice('luz-sala', salaBulb, function (on) { salaLamp.intensity = on ? 0.6 : 0; salaBulb.material.emissiveIntensity = on ? 0.9 : 0.08; });
   registerDevice('tv-sala', tv, function (on) { tv.material.emissiveIntensity = on ? 0.9 : 0; tv.material.color.set(on ? 0x0c0c0c : 0x050505); });
   registerDevice('luz-cozinha', kitchenStrip, function (on) { kitLamp.intensity = on ? 0.5 : 0; kitchenStrip.material.emissiveIntensity = on ? 1.1 : 0.15; });
@@ -212,6 +221,9 @@ window.iniciarCasa3D = function (opts) {
   registerDevice('porta-garagem', garagePanel, function (on) { garageTargetY = on ? garageOpenY : garageClosedY; });
   registerDevice('luz-externa', postBulb, function (on) { postLight.intensity = on ? 1.1 : 0; postBulb.material.emissiveIntensity = on ? 1.1 : 0.08; });
   registerDevice('camera-externa', camHead, function (on) { camActive = on; camLed.material.emissiveIntensity = on ? 1.1 : 0.15; });
+  registerDevice('camera-sala', salaCamHead, function (on) { camSalaActive = on; salaCamLed.material.emissiveIntensity = on ? 1.1 : 0.15; });
+  registerDevice('geladeira', geladeiraMesh, function (on) { geladeiraMesh.material.emissiveIntensity = on ? 0.22 : 0; geladeiraMesh.material.color.set(on ? 0x1c1c1c : 0x0e0e0e); });
+  registerDevice('luz-garagem', garageBulb, function (on) { garageLamp.intensity = on ? 0.7 : 0; garageBulb.material.emissiveIntensity = on ? 0.8 : 0.08; });
 
   var countOnEl = document.getElementById('iso3d-count-on');
   var countTotalEl = document.getElementById('iso3d-count-total');
@@ -388,6 +400,7 @@ window.iniciarCasa3D = function (opts) {
       robotRing.position.x = robot.position.x; robotRing.position.z = robot.position.z;
     }
     if (!reducedMotion && camActive) camLed.material.emissiveIntensity = 1.1 + Math.sin(clock.elapsedTime * 3.2) * 0.9;
+    if (!reducedMotion && camSalaActive) salaCamLed.material.emissiveIntensity = 1.1 + Math.sin(clock.elapsedTime * 3.2 + 1.6) * 0.9;
     if (Math.abs(garagePanel.position.y - garageTargetY) > 0.001) {
       garagePanel.position.y += (garageTargetY - garagePanel.position.y) * Math.min(1, dt * 4);
     }

@@ -1,21 +1,24 @@
 # PULSE2050 — Sistema Inteligente
 
-Projeto do 4º semestre de Ciência da Computação (ExpoTech 2026.2 · Missão 2050,
-categoria INTELLIGENCE) — arquitetura completa de uma smart home: modelagem
-de dados, POO com herança/polimorfismo, autenticação com dois perfis,
-persistência em banco relacional e um painel de energia calculado a partir
-do histórico real de uso dos dispositivos.
+Trabalho do 4º semestre de Ciência da Computação pra ExpoTech 2026.2 (Missão
+2050, categoria INTELLIGENCE). A proposta era montar o sistema por trás de
+uma casa inteligente — não só a telinha, mas o banco de dados, a lógica de
+programação orientada a objetos, autenticação, e um jeito de a casa "reagir"
+de verdade ao que os dispositivos estão fazendo.
 
-Documentação complementar: [`FLUXOGRAMA.md`](FLUXOGRAMA.md) (fluxo completo
-da aplicação), [`PROCESS.md`](PROCESS.md) (processo de desenvolvimento,
-decisões e estruturas de dados) e [`SPRINTS.md`](SPRINTS.md) (o mesmo
-processo organizado em sprints).
+Documentação complementar: [`FLUXOGRAMA.md`](FLUXOGRAMA.md) mostra o fluxo
+da aplicação em diagrama, [`PROCESS.md`](PROCESS.md) conta como fomos
+construindo o projeto (e onde erramos e corrigimos no caminho), e
+[`SPRINTS.md`](SPRINTS.md) organiza esse mesmo processo em sprints.
 
-## Stack
+## Com que a gente construiu
 
-Python 3.10+, Flask, SQLAlchemy (via Flask-SQLAlchemy), Flask-Login, SQLite.
+Python 3.10+, Flask, SQLAlchemy (com Flask-SQLAlchemy), Flask-Login e
+SQLite pro banco. Optamos por Python porque é a linguagem que o grupo mais
+domina, e Flask porque é leve o suficiente pra dar pra entender o projeto
+inteiro sem um framework enorme no meio do caminho.
 
-## Como rodar
+## Como rodar o projeto
 
 ```bash
 python -m venv .venv
@@ -26,137 +29,134 @@ python seed.py                   # cria o banco (pulse2050.db) e popula com dado
 python app.py                    # sobe o servidor em http://localhost:5000
 ```
 
-Abra `http://localhost:5000` e entre com uma das contas de demonstração
-(também exibidas na tela de login):
+Depois é só abrir `http://localhost:5000` e entrar com uma das contas de
+demonstração (elas também aparecem na própria tela de login):
 
-| Perfil            | E-mail                | Senha      |
-|--------------------|------------------------|-----------|
-| Administrador      | admin@pulse2050.app     | admin123  |
-| Usuário Comum       | comum@pulse2050.app     | comum123  |
+| Perfil            | E-mail                  | Senha      |
+|--------------------|--------------------------|-----------|
+| Administrador      | admin@pulse2050.app      | admin123  |
+| Usuário Comum       | comum@pulse2050.app      | comum123  |
 
-Se quiser recomeçar do zero (apagar tudo e repopular), rode `python seed.py`
-de novo — ele derruba e recria as tabelas.
+Se quiser começar do zero de novo (apagar tudo e repopular), é só rodar
+`python seed.py` outra vez — ele derruba e recria as tabelas.
 
-## Estrutura
+## Como o projeto está organizado
 
 ```
-app.py             fábrica da aplicação Flask, registra as blueprints
-config.py          configuração (banco, chave secreta, SMTP opcional)
+app.py             monta a aplicação Flask e liga as partes (blueprints)
+config.py          configurações gerais (banco, chave secreta, SMTP)
 extensions.py      instâncias do SQLAlchemy e do Flask-Login
-models.py          modelagem de dados (ver abaixo)
-auth.py            blueprint de login/logout
-main.py            blueprint do painel, controle de dispositivos e API da maquete 3D
-energia.py         blueprint do painel de energia e do relatório por e-mail
+models.py          onde as classes/tabelas do banco estão definidas
+auth.py            login e logout
+main.py            painel, controle dos dispositivos e a API da maquete 3D
+energia.py         painel de energia e o relatório por e-mail
 services/
-  energia.py       cálculo de kWh/custo a partir do histórico de uso
-  relatorios.py     geração (e envio opcional via SMTP) do relatório semanal
-  agendador.py     dispara automações no horário certo (ver seção abaixo)
-templates/          páginas Jinja2 (herdam de base.html)
-static/css/         folha de estilo (mesma identidade visual do protótipo)
-static/js/casa3d.js cena 3D interativa da maquete (ver seção abaixo)
+  energia.py       conta quanto de energia cada dispositivo gastou
+  relatorios.py     monta (e manda, se tiver SMTP configurado) o relatório
+  agendador.py     fica de olho no relógio e dispara as automações
+templates/          as páginas HTML (Jinja2)
+static/css/         o visual do projeto
+static/js/casa3d.js a cena 3D da maquete
 seed.py             popula o banco com cômodos, dispositivos, usuários,
-                    automações de exemplo e duas semanas de histórico de uso
-                    sintético
+                    automações e duas semanas de histórico de uso
 ```
 
 ## Modelagem de dados
 
-`Dispositivo` é mapeado com **Single Table Inheritance**: uma tabela só
-(`dispositivos`), discriminada pela coluna `tipo`, com uma subclasse Python
-por tipo de dispositivo (`Luz`, `Porta`, `Janela`, `Camera`, `TV`,
-`Eletrodomestico`, `RoboAspirador`, `ArCondicionado`). Cada subclasse
-sobrescreve `status()` e, quando faz sentido, `ligar()`/`desligar()` — é
-isso que materializa herança e polimorfismo no banco, não só no papel.
+A parte de que mais gostamos de pensar foi o `Dispositivo`. Em vez de criar
+uma tabela separada pra cada tipo de aparelho (o que ia dar um monte de
+JOIN toda hora), usamos uma técnica chamada Single Table Inheritance: existe
+uma tabela só (`dispositivos`), e uma coluna (`tipo`) diz qual subclasse
+Python aquele registro representa — `Luz`, `Porta`, `Janela`, `Camera`,
+`TV`, `Eletrodomestico`, `RoboAspirador` ou `ArCondicionado`. Cada uma
+dessas classes reescreve o método `status()` (e, quando faz sentido,
+`ligar()`/`desligar()`) do seu próprio jeito — é o exercício de herança e
+polimorfismo do trabalho acontecendo dentro do banco, não só num diagrama.
 
-`RegistroUso` guarda cada evento (ligou/desligou/ajustou) com timestamp.
-`services/energia.py` usa esse histórico para calcular quantas horas cada
-dispositivo ficou ligado num período e multiplica pela potência (Watts) —
-por isso o painel de energia mostra números calculados de verdade, não
-valores fixos.
+Cada vez que um dispositivo liga, desliga ou tem algum ajuste (tipo a
+intensidade de uma luz), isso vira um registro na tabela `RegistroUso`, com
+horário. É esse histórico que o `services/energia.py` usa pra calcular
+quantas horas cada aparelho ficou ligado e multiplicar pela potência dele —
+por isso os números do painel de energia são calculados de verdade, e não
+inventados.
 
-`Automacao` + `AutomacaoAcao` modelam rotinas (ex.: "acender às 18:30"),
-permitindo que uma automação dispare ações em vários dispositivos. Elas
-disparam de verdade: `services/agendador.py` sobe um `BackgroundScheduler`
-(APScheduler) junto com o Flask que checa a cada minuto se alguma automação
-ativa bate com o horário e o dia da semana atuais (fuso `TIMEZONE`, padrão
-`America/Sao_Paulo`) e chama `dispositivo.ligar()`/`desligar()` — o mesmo
-código que uma pessoa aciona pelo botão, então o `RegistroUso` gerado
-(`usuario=None`) entra no cálculo de energia normalmente. Cada automação pode
-ser ativada/desativada individualmente na tela do dispositivo, e o painel
-mostra a próxima automação a disparar.
-
-`RelatorioEnviado` guarda um retrato congelado (kWh, custo, tarifa usada)
-de cada relatório gerado, para que um relatório antigo não mude se a tarifa
-mudar depois.
+As automações (`Automacao` + `AutomacaoAcao`) ficaram um dos pontos que
+mais evoluiu durante o projeto: no começo elas só ficavam salvas no banco,
+sem disparar sozinhas. Depois colocamos o `services/agendador.py` rodando
+junto com o Flask, checando a cada minuto se alguma automação bate com o
+horário e o dia da semana — e quando bate, ele chama o mesmo `ligar()`/
+`desligar()` que o botão da tela chama, então tudo entra no cálculo de
+energia igualzinho. Dá pra ativar e desativar cada automação individual, e
+o painel mostra qual vai disparar em seguida.
 
 ## Painel de energia
 
-Além do consumo e custo do período, o painel compara a semana atual com a
-anterior (variação %), projeta o custo do mês no ritmo atual, e mostra um
-gráfico empilhado do consumo diário por cômodo dos últimos 7 dias. Também
-gera um alerta simples baseado em regra: se algum dispositivo consumiu
-bem mais essa semana que na anterior (acima de um limiar, com uma base de
-comparação mínima pra não disparar em cima de ruído), o painel aponta qual
-e sugere ajustar o agendamento — é a peça que mais materializa a categoria
-INTELLIGENCE no projeto, mesmo sendo uma regra simples e não um modelo de
-ML (não fazia sentido treinar algo em cima do volume de dados de uma casa
-simulada).
+Além de mostrar quanto cada dispositivo consumiu, o painel compara a
+semana atual com a anterior, projeta o gasto do mês inteiro no ritmo atual,
+e tem um gráfico do consumo dia a dia por cômodo. Também colocamos um
+alerta simples: se algum dispositivo consumiu bem mais que na semana
+passada, o painel avisa e sugere olhar o agendamento dele. Não é
+inteligência artificial de verdade (é só uma comparação percentual com uma
+regra), mas é a parte do projeto que mais tenta materializar a categoria
+INTELLIGENCE — treinar um modelo de ML não fazia sentido pro tanto de dado
+que uma casa simulada gera.
 
 ## Maquete 3D
 
-O dashboard tem uma segunda aba, "Maquete 3D" (`static/js/casa3d.js`, Three.js
-via CDN, carregado só quando a aba é aberta pela primeira vez — não pesa no
-carregamento normal do painel). É uma cena 3D navegável da casa com um tour
-automático de câmera, onde os 10 dispositivos modelados (mapeados por nome
-exato) são clicáveis de verdade:
+Além da tela normal (com os cards dos dispositivos), o painel tem uma
+segunda aba chamada "Maquete 3D": uma casa em 3D (feita com Three.js) que
+dá pra passear com a câmera e clicar nos dispositivos pra ligar/desligar de
+verdade. Os 13 dispositivos do projeto têm um objeto correspondente na
+cena.
 
-- **Clicar chama a mesma rota** `/dispositivo/<id>/alternar` que os cards
-  usam — mesma checagem de `pode_controlar()`, mesmo `RegistroUso` gerado.
-  Não existe um caminho especial pra maquete; ela é só outra interface pra
-  cima da mesma lógica de negócio.
-- **`GET /api/dispositivos`** devolve o estado atual de todos os
-  dispositivos em JSON. A maquete consulta essa rota a cada 5 segundos, então
-  uma automação disparando sozinha, ou alguém mexendo pelos cards em outra
-  aba, aparece na cena sem precisar recarregar a página.
-- Luzes acendem/apagam de verdade (intensidade da `PointLight` + material
-  emissivo), a porta da garagem desliza ao abrir, o robô aspirador sai
-  andando quando ativado.
+O que achamos legal nessa parte não foi só o visual — é que ela usa
+exatamente a mesma rota que os cards já usavam pra ligar/desligar
+(`/dispositivo/<id>/alternar`), então não existe um caminho "especial" só
+pra maquete. E como o agendador pode ligar algo sozinho, ou outra pessoa
+pode mexer em outra aba, a maquete confere o estado do banco a cada 5
+segundos (`GET /api/dispositivos`) pra se manter atualizada sem precisar
+recarregar a página.
 
-## Permissões
+## Quem pode controlar o quê
 
-Cada `Dispositivo` tem `controlavel_por_comum` (bool). O Administrador
-sempre pode controlar tudo; o Usuário Comum só os dispositivos marcados
-como liberados — a regra vive em `Dispositivo.pode_controlar()` e é
-aplicada tanto nas rotas (retorna erro sem a permissão) quanto na tela
-(o botão aparece desabilitado).
+Cada `Dispositivo` tem um campo `controlavel_por_comum`. O Administrador
+sempre pode mexer em tudo; o Usuário Comum só nos dispositivos que estão
+marcados como liberados. Essa regra vive num método só,
+`Dispositivo.pode_controlar()`, e é usada tanto nas rotas (pra recusar a
+ação, mesmo que alguém tente forçar) quanto na tela (o botão já aparece
+desabilitado).
 
-## Testes
+## Como testamos
 
-`smoke_test.py` exercita as rotas reais (login dos dois perfis, dashboard,
-alternar dispositivo, validação de intensidade, painel de energia, geração
-de relatório, bloqueio de permissão) usando o test client do Flask — não
-precisa do servidor rodando. Para conferir que está tudo funcionando depois
-de qualquer alteração no código:
+Escrevemos um `smoke_test.py` que simula alguém usando o sistema de
+verdade: login dos dois perfis, ligar/desligar dispositivo, tentar colocar
+um valor inválido na intensidade da luz, ver o painel de energia, gerar um
+relatório, tentar controlar algo sem permissão. São 24 checagens, e não
+precisa nem subir o servidor — ele usa o cliente de teste do próprio
+Flask. Pra rodar:
 
 ```bash
-python seed.py        # garante um banco limpo
-python smoke_test.py  # roda os 24 checks e imprime OK/FAIL de cada um
+python seed.py        # garante um banco limpo pra testar
+python smoke_test.py  # roda os 24 checks e mostra OK/FAIL de cada um
 ```
 
-Esse arquivo já foi rodado durante o desenvolvimento e pegou (e corrigiu)
-bugs reais: validação de horário de automação aceitando `"25:99"` como
-válido, e um warning do SQLAlchemy na geração do relatório.
+Esse arquivo já pegou bug de verdade durante o desenvolvimento — por
+exemplo, a validação do horário de uma automação estava aceitando
+`"25:99"` como se fosse um horário válido, e um `NameError` bobo (um
+`import` esquecido) que só apareceu quando testamos de novo depois de
+mexer no agendador.
 
-## O que ainda é só esqueleto (próximos passos, se sobrar tempo)
+## O que ainda dá pra melhorar
 
-- **Envio de e-mail real** funciona se você configurar `SMTP_HOST`,
-  `SMTP_USER` e `SMTP_SENHA` como variáveis de ambiente (veja `config.py`).
-  Sem isso, o relatório é gerado e você vê a pré-visualização na tela.
-- **Dias da semana da automação.** O modelo já suporta `dias_semana` (ex.:
-  `"seg,qua,sex"`, interpretado por `services/agendador.py`), mas o
-  formulário de criar automação só permite todo dia — falta o seletor de
-  dias na tela.
+- O formulário de criar automação só permite "todo dia" — o banco e o
+  agendador já entendem dias específicos (tipo `"seg,qua,sex"`), só falta
+  o seletor na tela.
+- Três dispositivos (Câmera da Sala, Geladeira, Luz da Garagem) foram os
+  últimos a ganhar objeto na maquete 3D — os outros dez já estavam lá
+  desde a primeira versão da integração.
+- O envio de e-mail de verdade só funciona se configurar `SMTP_HOST`,
+  `SMTP_USER` e `SMTP_SENHA` (variáveis de ambiente, ver `config.py`). Sem
+  isso, o relatório é gerado normalmente e mostra a prévia na tela.
 - Os botões "continuar como Administrador/Usuário Comum" na tela de login
-  são propositalmente uma conveniência de demonstração (as mesmas contas já
-  aparecem em texto puro logo abaixo) — não seriam apropriados assim numa
-  aplicação real com contas de verdade.
+  são só pra facilitar a demonstração — as mesmas contas já aparecem em
+  texto simples logo abaixo, então não muda o nível de acesso a nada.

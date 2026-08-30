@@ -1,8 +1,10 @@
 # Fluxograma da aplicação
 
-Fluxo completo do PULSE2050, das duas entradas do sistema (uma pessoa
-usando a interface, e o agendador rodando sozinho em segundo plano) até os
-efeitos finais no banco de dados.
+Esse diagrama mostra o caminho completo que uma ação percorre no
+PULSE2050, desde quem inicia ela até o que acontece no banco de dados.
+Tem duas formas de uma ação começar: uma pessoa usando a interface (login,
+painel, maquete 3D) ou o agendador rodando sozinho em segundo plano,
+disparando uma automação sem ninguém clicar em nada.
 
 ```mermaid
 flowchart TD
@@ -101,23 +103,23 @@ flowchart TD
     end
 ```
 
-## Como ler
+## O que vale reparar nesse fluxo
 
-- **Dois pontos de entrada de dados no `RegistroUso`:** uma pessoa
-  interagindo pela UI (`usuario` preenchido) ou o agendador disparando uma
-  automação sozinho (`usuario = None`) — os dois alimentam o mesmo cálculo
-  de energia, sem caminho especial pra automação.
-- **Toda ação de controle passa por uma checagem de permissão**
-  (`Dispositivo.pode_controlar()`) antes de qualquer mudança de estado —
-  aparece três vezes no fluxo (alternar dispositivo, alternar automação,
-  mudar permissão) porque é a mesma regra aplicada em pontos diferentes.
-- **Toda entrada de formulário é validada antes de tocar no banco** —
-  intensidade (dígito 1-100), horário da automação (HH:MM válido),
-  credenciais de login.
-- **A Maquete 3D não tem lógica própria de controle** — um clique nela cai
-  no mesmo `PermToggle` que os cards usam, então a regra de permissão e o
-  `RegistroUso` gerado são idênticos, só a interface é diferente. O `POLL`
-  em paralelo é o que permite a maquete refletir uma automação disparando
-  sozinha (ou alguém mexendo em outra aba) sem precisar recarregar a
-  página — ela lê o mesmo estado que qualquer um dos três `RegistroUso`
-  do fluxo principal deixou no banco.
+- **Tem duas formas de o histórico de uso (`RegistroUso`) ser criado**: uma
+  pessoa mexendo pela interface, ou o agendador disparando uma automação
+  sozinho. Os dois casos alimentam o mesmo cálculo de energia — não
+  criamos um caminho separado só pra automação, ela usa exatamente a mesma
+  lógica que um clique humano usaria.
+- **Toda ação de controle passa pela mesma checagem de permissão** antes
+  de mudar qualquer coisa. Ela aparece três vezes no desenho (ligar/desligar
+  dispositivo, ativar automação, mudar permissão) porque é literalmente a
+  mesma regra sendo usada em três lugares diferentes do sistema, não uma
+  regra reescrita três vezes.
+- **Todo formulário é validado antes de mexer no banco** — intensidade da
+  luz (só aceita número de 1 a 100), horário da automação (tem que ser um
+  HH:MM que existe de verdade), e-mail e senha do login.
+- **A maquete 3D não tem regra de controle própria.** Um clique nela cai
+  no mesmo fluxo de permissão que os cards já usavam — a diferença é só a
+  interface, a lógica por trás é idêntica. O quadro de "poll" (consulta
+  periódica) é o que deixa a maquete atualizada quando algo muda por fora
+  dela — uma automação disparando, ou alguém mexendo em outra aba.

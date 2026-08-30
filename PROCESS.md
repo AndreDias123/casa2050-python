@@ -1,183 +1,180 @@
-## Contexto
+# Como o projeto foi evoluindo
 
-O projeto chegou com a arquitetura principal pronta (modelagem de dados,
-herança/polimorfismo em `Dispositivo`, autenticação com dois perfis,
-painel de energia calculado a partir do histórico real). O próprio
-`README.md` documentava três lacunas conhecidas: automações que não
-disparavam sozinhas, envio de e-mail dependente de SMTP configurado, e
-ausência de proteção CSRF.
+Esse documento é o nosso registro de como fomos construindo o PULSE2050 —
+não só o que ficou pronto, mas o caminho até chegar lá: o que a gente
+tentou, o que deu errado antes de dar certo, e por que escolhemos um jeito
+de fazer em vez de outro. A ideia é que qualquer um do grupo consiga usar
+isso pra estudar antes da arguição individual, mesmo numa parte do código
+que não foi ele quem escreveu.
 
-## Rodada 1 — Agendador de automações
+## De onde a gente partiu
 
-**Pedido:** fazer as automações (`Automacao`/`AutomacaoAcao`, já com CRUD
-funcionando) disparar sozinhas de verdade, no horário configurado.
+O projeto já chegou com a base pronta: a modelagem de dados, a herança e
+polimorfismo do `Dispositivo`, o login com dois perfis, e o painel de
+energia calculando em cima do histórico real de uso. O próprio README já
+apontava três coisas que faltavam: as automações não disparavam sozinhas,
+não tinha proteção contra CSRF nos formulários, e o envio de e-mail
+dependia de configurar SMTP.
 
-**Decisão de arquitetura:** um `BackgroundScheduler` do APScheduler,
-rodando dentro do próprio processo Flask (`services/agendador.py`), em vez
-de um serviço externo — mais simples de rodar e demonstrar num projeto
-acadêmico, sem infraestrutura extra. O job roda a cada minuto e chama
-`dispositivo.ligar()`/`desligar()` — o mesmo método que o botão da UI usa
-— então o `RegistroUso` gerado (`usuario=None`, marcando que foi a
-automação) entra no cálculo de energia normalmente, sem caminho especial.
+## Fazendo as automações funcionarem de verdade
 
-**Detalhes que precisaram de atenção:**
-- **Fuso horário.** O resto do sistema trabalha em UTC (`agora()` em
-  `models.py`), mas o campo `horario` (`"HH:MM"`) da automação representa
-  hora local de quem mora na casa. Adicionei `TIMEZONE` em `config.py`
-  (padrão `America/Sao_Paulo`) e uso `zoneinfo` pra comparar.
-- **Windows não tem banco de fusos horários embutido** — `zoneinfo` só
-  funciona com o pacote `tzdata` instalado. Sem isso, `ZoneInfo("America/
-  Sao_Paulo")` levanta `ZoneInfoNotFoundError` — foi adicionado no
-  `requirements.txt`.
-- **Reloader do Flask em modo debug sobe dois processos** (o observador e o
-  worker). Sem cuidado, o agendador ligaria duas vezes e disparava cada
-  automação duas vezes por minuto. Guardei a inicialização atrás de
-  `WERKZEUG_RUN_MAIN`.
+A primeira coisa que resolvemos foi a lacuna mais óbvia: automação salva no
+banco, mas que nunca dispara sozinha. Pensamos em algumas formas de
+resolver isso e optamos por usar o APScheduler rodando junto do próprio
+processo do Flask (em vez de montar um serviço separado) — é bem mais
+simples de rodar e de explicar, e não precisa de nenhuma infraestrutura
+extra que a gente não teria como manter.
 
-**Validação:** rodei o smoke test (24/24 OK) e um teste manual que cria uma
-automação com o horário atual e chama a função interna do agendador
-diretamente (sem esperar o minuto virar), confirmando que o dispositivo
-liga de verdade e o `RegistroUso` fica com `usuario_id=None`.
+A parte que deu mais trabalho aqui não foi o agendador em si, foi um
+detalhe de fuso horário: o resto do sistema trabalha em UTC, mas o horário
+que a pessoa digita numa automação ("18:30") é óbvio que é hora local dela.
+Então criamos uma configuração de `TIMEZONE` (padrão `America/Sao_Paulo`) e
+usamos isso pra comparar direito. E descobrimos no caminho que o Windows
+não vem com um banco de fusos horários embutido — sem o pacote `tzdata`
+instalado, o Python simplesmente não sabe o que é "America/Sao_Paulo" e dá
+erro.
 
-## Rodada 2 — Seis melhorias para maximizar a nota
+Outra pegadinha: como o Flask em modo de desenvolvimento sobe dois
+processos (um só de observador, outro que realmente atende), sem cuidado
+o agendador ia rodar duas vezes ao mesmo tempo e disparar cada automação
+duas vezes por minuto. Resolvemos isso checando uma variável de ambiente
+que só existe no processo "de verdade".
 
-Depois de comparar o app com um protótipo visual (mockup) mais completo do
-mesmo projeto, sugeri seis melhorias priorizadas por impacto vs. esforço,
-todas aprovadas para implementação:
+Testamos criando uma automação com o horário de agora mesmo e chamando a
+função do agendador na mão, sem esperar o relógio virar — e confirmamos
+que o dispositivo realmente ligava e ficava registrado no banco.
 
-1. **Alerta inteligente de consumo** — a peça que mais materializa a
-   categoria INTELLIGENCE do projeto. `services/energia.py::gerar_alerta()`
-   compara o consumo de cada dispositivo com a semana anterior e aponta o
-   que mais cresceu, acima de um limiar.
-2. **Toggle de automação ativa/inativa** — nova rota `alternar_automacao`
-   em `main.py`, respeitando a mesma permissão de controle do dispositivo.
-3. **Comparação semanal + projeção mensal** — no painel de energia.
-4. **Gráfico empilhado de consumo diário por cômodo** — usei um método de
-   visualização de dados (via IAra) com paleta categórica validada
-   contra daltonismo, ordem de cor fixa por cômodo nunca por posição,
-   legenda, marcas com espaçamento consistente.
-5. **Polimento de login/dashboard** — filtro por cômodo (chips + JS puro),
-   botões "continuar como Admin/Comum" e "lembrar de mim".
-6. **Proteção CSRF** — `Flask-WTF` em todos os 8 formulários POST do app.
+## Deixando o painel de energia mais inteligente
 
-### Bugs encontrados e corrigidos no processo
+Depois de resolver as automações, focamos em dar mais substância pra
+categoria do projeto (INTELLIGENCE). Não bastava só mostrar número de kWh
+— queria mostrar algum tipo de análise em cima disso. Então implementamos:
 
-- **`NameError: timedelta`** em `services/agendador.py` — a função
-  `proxima_automacao()` usava `timedelta` sem importar. Pego pelo
-  `smoke_test.py` na primeira execução após a mudança, corrigido na hora.
-- **Alerta de consumo absurdo (10794%).** O `seed.py` só gerava uma semana
-  de histórico, então o período "semana anterior" usado como base de
-  comparação ficava praticamente vazio — dividir por um número perto de
-  zero explode a porcentagem. Corrigido em duas frentes: (a) o alerta
-  passou a exigir uma base mínima de consumo no período anterior antes de
-  calcular variação, e (b) o `seed.py` foi estendido para duas semanas de
-  histórico, com o ar-condicionado tendo uma tendência real de alta
-  (~21–31%) — assim o recurso fica demonstrável com um número plausível em
-  vez de "sem dados" ou um outlier de dados incompletos.
-- **Seed sem nenhuma automação.** O banco de exemplo nunca criava uma
-  `Automacao`, então o banner "próxima automação" e o toggle não tinham o
-  que mostrar numa instalação nova. Adicionadas 4 automações de exemplo
-  (luz do quarto e luz externa, ligar/desligar).
+- Uma comparação da semana atual com a anterior (quanto cresceu ou caiu, em
+  porcentagem);
+- Uma projeção de quanto isso vai dar de custo no mês inteiro, no ritmo
+  atual;
+- Um alerta que aponta o dispositivo que mais aumentou o consumo — se
+  passar de um certo limite;
+- Um gráfico do consumo por dia, separado por cômodo.
 
-### Validação
+Um bug engraçado apareceu aqui: no primeiro teste, o alerta calculou que um
+dispositivo tinha aumentado o consumo em **10794%**. O motivo era simples —
+os dados de exemplo (`seed.py`) só tinham uma semana de histórico, então a
+"semana anterior" usada como comparação praticamente não tinha nenhum dado,
+e dividir por um número quase zero explode a porcentagem. Corrigimos de
+duas formas: o alerta passou a exigir uma quantidade mínima de consumo na
+semana anterior antes de calcular a variação, e estendemos o histórico de
+exemplo pra duas semanas.
 
-- `smoke_test.py`: 24/24 checks, com CSRF desativado só no cliente de
-  teste (`WTF_CSRF_ENABLED = False`) — prática padrão do Flask-WTF, CSRF
-  continua ativo em uso normal.
-- Testes manuais via `curl` contra o servidor real rodando: login e login
-  rápido, toggle de dispositivo e de automação, filtro por cômodo,
-  alerta e gráfico do painel de energia — todos conferidos ponta a ponta,
-  incluindo o fluxo de CSRF (sessão + token) e não só o "caminho feliz".
+## Deixando a experiência mais completa
 
-## Estruturas de dados — escolhas e por quê
+Com o núcleo funcionando, fomos atrás de fechar pontas soltas de uso e de
+segurança:
 
-O projeto não implementa estruturas de dados customizadas do zero (não
-fazia sentido reinventar uma árvore ou uma hash table quando Python e o
-SQLAlchemy já dão as ferramentas certas) — mas cada uso das estruturas
-prontas foi uma escolha deliberada, não a primeira coisa que funcionou:
+- Cada automação ganhou um botão pra ativar/desativar ela sozinha, sem
+  precisar apagar e criar de novo;
+- O painel passou a mostrar qual é a próxima automação a disparar;
+- Adicionamos um filtro por cômodo no painel;
+- O login ganhou botões de "continuar como Administrador/Usuário Comum"
+  (só pra facilitar testar) e a opção de "lembrar de mim";
+- E, o mais importante do ponto de vista de segurança: adicionamos proteção
+  contra CSRF em todos os formulários com o Flask-WTF.
 
-- **`dict` pra agregação/lookup por cômodo** (`cor_comodo`, `por_comodo`
-  em `energia.py`, `services/energia.py::consumo_diario_por_comodo`).
-  Alternativa seria uma lista de tuplas `(nome, valor)` e buscar com um
-  loop toda vez que precisasse do valor de um cômodo específico — O(n) a
-  cada acesso. Com `dict`, cada acesso por nome é O(1); como a mesma cor
-  de cômodo é consultada várias vezes por página (uma vez por segmento do
-  gráfico, uma vez por linha da lista), a diferença é real mesmo em
-  escala pequena.
-- **`set` pra checar dia da semana** (`_dia_bate()` em
-  `services/agendador.py`): `dias_pedidos = {d.strip() for d in
-  dias_semana.split(",")}` em vez de manter a lista separada por vírgula
-  e checar com `in` numa lista. Isso roda a cada minuto pro job do
-  agendador — `in` num `set` é O(1), `in` numa lista seria O(n) (n
-  pequeno aqui, mas é o tipo de hábito que importa quando o volume cresce).
-- **Ordenação delegada ao banco, não repetida em Python**
-  (`RegistroUso.query....order_by(RegistroUso.timestamp)`): o SQLite já
-  devolve os registros ordenados por timestamp usando índice/ordenação
-  no próprio motor do banco; o código Python nunca precisa rodar um
-  `sorted()` em cima do resultado. Evita pagar O(n log n) duas vezes
-  (uma no banco, outra em memória) pela mesma coisa.
-- **Lista de tuplas + `sort()` (Timsort, O(n log n)) pra ranquear consumo**
-  (`resumo_consumo()`): dispositivos de uma casa são poucas dezenas, no
-  máximo. Uma estrutura de prioridade (heap) traria complexidade extra de
-  código sem ganho real nessa escala — ordenar uma vez por requisição é
-  simples e suficiente. Justifica a escolha da estrutura mais simples
-  quando o volume de dados não pede uma mais sofisticada, não só a mais
-  sofisticada por padrão.
-- **Single Table Inheritance em vez de uma tabela por tipo de
-  dispositivo** (`models.py`): a alternativa (Class Table Inheritance,
-  uma tabela por subclasse com `JOIN`) evitaria colunas nulas para
-  atributos que só fazem sentido em alguns tipos (`atributos_extra`
-  cobre isso via coluna JSON em vez de colunas fixas), mas custaria um
-  `JOIN` a mais em toda consulta de dispositivo — trade-off consciente: 
-  menos normalização, menos joins, mais simples de consultar um comodo
-  inteiro de uma vez (que é a consulta mais frequente do sistema, tanto no
-  dashboard quanto no calculo de energia).
+Nessa etapa também apareceu um erro bobo — uma função nova
+(`proxima_automacao`) usando `timedelta` sem ter importado. O smoke test
+pegou isso na primeira rodada depois da mudança, e corrigimos na hora.
 
-## Rodada 3 — Maquete 3D interativa e integrada
+## Conferindo contra o que o edital pedia
 
-**Pedido:** um diferencial visual pro projeto — inicialmente cogitamos 3D de
-verdade, decidimos que o risco/esforço não compensava e fizemos uma planta
-isométrica (2.5D) como mockup pra validar a ideia dos "gatilhos" (clicar num
-ícone liga/desliga o dispositivo, com feedback visual). O mockup agradou, e
-a partir de um protótipo 3D à parte (Three.js, tour de câmera automático
-pela casa) que já existia, juntamos as duas coisas: a cena 3D de verdade +
-os gatilhos clicáveis — e depois conectamos isso ao Flask de verdade.
+Depois de um tempo focados em construir, paramos pra checar item por item
+contra o roteiro oficial da categoria INTELLIGENCE, em vez de confiar só na
+nossa impressão de que "tava tudo pronto". E encontramos dois furos:
 
-**Decisão de arquitetura pra integração:**
-- **Reaproveitar a rota de toggle existente** (`/dispositivo/<id>/alternar`)
-  em vez de criar uma rota nova só pra maquete — a mesma checagem de
-  permissão, o mesmo `RegistroUso`, sem duplicar lógica de negócio. A
-  chamada via `fetch` usa o token CSRF pelo header `X-CSRFToken` (o
-  Flask-WTF já aceita isso por padrão, `WTF_CSRF_HEADERS`), então não
-  precisou mudar a rota nem desligar proteção nenhuma pra AJAX funcionar.
-- **Mapeamento por nome, não por tipo genérico.** A cena 3D é uma casa
-  específica desenhada à mão (não gerada a partir de uma lista arbitrária
-  de dispositivos), então o `casa3d.js` mapeia por nome exato ("Luz da
-  Sala" → objeto 3D da luz da sala). Só 10 dos 13 dispositivos do seed têm
-  um objeto correspondente na cena — os outros três (Câmera da Sala,
-  Geladeira, Luz da Garagem) ficaram de fora por não terem objeto
-  modelado ainda, não por limitação técnica.
-- **Poll em vez de WebSocket.** Pra maquete pegar mudanças feitas pelo
-  agendador ou por outra aba, precisava de alguma forma de sincronizar sem
-  recarregar a página. Um `GET /api/dispositivos` consultado a cada 5
-  segundos resolve isso com uma rota JSON simples, sem adicionar
-  Flask-SocketIO nem infraestrutura nova — troca "tempo real de verdade"
-  por "atualiza em até 5 segundos", aceitável pro que o projeto precisa.
-- **Carregamento sob demanda.** As bibliotecas do Three.js (CDN) só são
-  injetadas no DOM quando a aba "Maquete 3D" é aberta pela primeira vez —
-  visitar o dashboard normalmente não paga o custo de carregar uma engine
-  3D que a pessoa pode nunca abrir.
+- **Não tinha fluxograma nenhum.** É um item explícito da lista de
+  requisitos, e simplesmente não tínhamos feito ainda.
+- **A estratégia de estrutura de dados nunca foi explicada em lugar
+  nenhum.** O código já fazia escolhas conscientes (por exemplo, usar um
+  dicionário pra buscar a cor de um cômodo em vez de percorrer uma lista
+  toda vez), mas nunca escrevemos o porquê — e se alguém perguntasse isso
+  na arguição, não teríamos uma resposta pronta.
 
-**Validado por:** smoke test (24/24, nada quebrou), e depois testes manuais
-via `curl` simulando exatamente o que o clique na maquete faz — POST na
-rota de toggle com o header `X-CSRFToken`, confirmando pela API que o
-`ativo` do dispositivo mudou de verdade no banco. O clique dentro do
-navegador (WebGL) em si não foi testado por aqui — não tem como rodar um
-navegador de verdade neste ambiente — mas a lógica do clique é a mesma do
-protótipo em Artifact que já tinha sido conferida visualmente antes.
+Resolvemos os dois: criamos o `FLUXOGRAMA.md` com o fluxo completo da
+aplicação, e acrescentamos uma seção no fim deste documento explicando as
+escolhas de estrutura de dados que já existiam no código.
 
-## Como rodar
+## A maquete 3D
 
-Ver `README.md` — nada mudou no fluxo (`pip install -r requirements.txt`,
-`python seed.py`, `python app.py`). O `seed.py` agora recria duas semanas
-de histórico e as automações de exemplo toda vez que é rodado.
+Essa foi a parte mais divertida de fazer, e também a que passou por mais
+versões até chegar no formato final. Primeiro pensamos em fazer a casa em
+3D de verdade, mas achamos que o risco de não terminar a tempo era alto
+demais pra um "extra" — então fizemos um protótipo mais simples primeiro,
+uma planta baixa meio 2.5D, só pra testar a ideia de "clicar num ícone e
+ver a casa reagir". Gostamos do resultado, e aí juntamos essa interação com
+uma cena 3D de verdade (com Three.js) que já tínhamos experimentado à
+parte, com uma câmera passeando automaticamente pela casa.
+
+Depois veio a parte que mais importa pro projeto: conectar isso ao Flask
+de verdade, e não deixar só como uma demonstração isolada. Pra isso:
+
+- Fizemos a maquete usar a **mesma rota** que os cards já usavam pra
+  ligar/desligar um dispositivo, em vez de criar uma rota nova só pra ela
+  — assim a regra de permissão e o registro de uso continuam sendo os
+  mesmos, sem duplicar lógica em dois lugares;
+- Criamos uma rota nova só de consulta (`/api/dispositivos`, em formato
+  JSON) que a maquete confere a cada 5 segundos, pra pegar mudanças que
+  vieram de uma automação ou de outra pessoa mexendo em outra aba;
+- Deixamos as bibliotecas do Three.js (que são pesadas) carregando só
+  quando a pessoa realmente abre a aba da maquete, pra não deixar o painel
+  normal mais lento à toa;
+- No fim, completamos os três dispositivos que ainda não tinham objeto na
+  cena (Câmera da Sala, Geladeira e Luz da Garagem), então hoje os 13
+  dispositivos do projeto aparecem lá.
+
+## Estruturas de dados — o porquê de cada escolha
+
+Não criamos nenhuma estrutura de dados do zero (não fazia sentido
+reinventar uma árvore ou uma tabela hash quando o Python e o SQLAlchemy já
+dão ferramentas prontas pra isso), mas cada uso delas foi pensado, não foi
+só a primeira coisa que funcionou:
+
+- **Dicionário pra buscar informação por cômodo** (a cor de cada cômodo no
+  gráfico, o total de consumo por cômodo): a alternativa seria uma lista
+  de pares e percorrer ela toda vez que precisasse do valor de um cômodo
+  específico. Com dicionário, cada busca é praticamente instantânea, e
+  como a mesma informação é consultada várias vezes numa página só, a
+  diferença é real mesmo numa casa pequena.
+- **Conjunto (`set`) pra checar o dia da semana da automação:** em vez de
+  guardar os dias como uma lista separada por vírgula e checar um por um,
+  transformamos isso num `set` — como essa checagem roda a cada minuto
+  (é o agendador conferindo se alguma automação bate com agora), faz
+  sentido que ela seja o mais rápida possível.
+- **Deixamos o próprio banco de dados ordenar os registros**, em vez de
+  buscar tudo e ordenar de novo em Python — o SQLite já faz isso de forma
+  eficiente, então repetir o trabalho em Python seria desperdício.
+- **Lista comum com ordenação simples pra ranquear o consumo dos
+  dispositivos:** como uma casa tem só algumas dezenas de dispositivos no
+  máximo, não fazia sentido usar uma estrutura mais sofisticada (tipo uma
+  fila de prioridade) só pra parecer mais avançado — ordenar do jeito mais
+  simples já resolve bem nessa escala.
+- **A escolha de Single Table Inheritance** pro `Dispositivo`, em vez de
+  uma tabela por tipo: a alternativa evitaria algumas colunas que só fazem
+  sentido pra certos tipos de aparelho, mas ia exigir um JOIN toda vez que
+  quiséssemos ver os dispositivos de um cômodo — e essa é justamente a
+  consulta mais comum do sistema inteiro (acontece toda vez que o painel
+  carrega). Preferimos simplicidade na consulta mais frequente.
+
+## Como testamos tudo isso
+
+Rodamos o `smoke_test.py` depois de cada mudança relevante — ele simula
+alguém de verdade usando o sistema (login, ligar dispositivo, gerar
+relatório, tentar burlar permissão) e imprime OK/FAIL de cada checagem. Foi
+esse arquivo que pegou os dois bugs mencionados acima antes de virarem
+problema. Pra funcionalidades que dependem de tempo (o agendador, por
+exemplo), também fizemos testes manuais chamando a função direto, sem
+esperar o relógio virar de verdade. E, pra maquete 3D, testamos a
+integração com o back-end simulando via linha de comando exatamente a
+chamada que um clique faz (com o token de segurança certo), confirmando
+que o estado realmente mudava no banco — o clique dentro do navegador em
+si (a parte gráfica) foi conferido visualmente, já que isso depende de
+rodar num navegador de verdade.

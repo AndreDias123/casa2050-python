@@ -1,222 +1,147 @@
-## Sprint 0 — Base do projeto
+# O projeto em sprints
 
-**Objetivo:** ter a arquitetura principal da smart home funcionando antes
-de qualquer sprint de melhoria.
-
-**Entregas:**
-- Modelagem de dados com Single Table Inheritance (`Dispositivo` → `Luz`,
-  `Porta`, `Janela`, `Camera`, `TV`, `Eletrodomestico`, `RoboAspirador`,
-  `ArCondicionado`), cada subclasse com `status()`/`ligar()`/`desligar()`
-  próprios — herança e polimorfismo aplicados no banco, não só no papel.
-- Autenticação com dois perfis (Administrador / Usuário Comum) e permissão
-  por dispositivo (`Dispositivo.pode_controlar()`).
-- Painel de energia com kWh e custo calculados a partir do histórico real
-  de uso (`RegistroUso`), não valores fixos.
-- Automações (`Automacao`/`AutomacaoAcao`) com CRUD funcionando, mas ainda
-  sem disparo automático.
-- Relatório semanal por e-mail (com preview quando SMTP não configurado).
-- `smoke_test.py` com 24 checks end-to-end.
-
-**Backlog conhecido ao final da sprint** (registrado no próprio README):
-automações não disparam sozinhas · sem proteção CSRF · e-mail depende de
-SMTP configurado.
-
-**Commit:** `Estado inicial: PULSE2050 - sistema inteligente de casa conectada`
+Esse documento organiza o desenvolvimento do PULSE2050 em sprints — não é
+material de entrega da disciplina, é mais um jeito de deixar registrado
+como o projeto foi crescendo, período por período, pra gente usar de
+referência (inclusive pro próximo projeto do grupo). Cada sprint aqui
+representa um pedaço real de trabalho, não uma data fixa de calendário.
 
 ---
 
-## Sprint 1 — Automações disparando de verdade
+## Sprint 0 — A base do projeto
 
-**Objetivo:** resolver o item mais importante do backlog: fazer as
-automações salvas no banco disparar sozinhas, sem depender de alguém
-clicar num botão.
+O que já estava pronto antes da gente começar a mexer:
 
-**Decisão de arquitetura:** `BackgroundScheduler` (APScheduler) rodando
-dentro do próprio processo Flask, em vez de um serviço externo — mais
-simples de rodar e demonstrar sem infraestrutura extra.
-
-**Entregas:**
-- `services/agendador.py`: checa a cada minuto se alguma automação ativa
-  bate com horário/dia da semana (fuso `TIMEZONE`, padrão
-  `America/Sao_Paulo`) e chama `dispositivo.ligar()`/`desligar()` — o
-  mesmo método que o botão da UI usa, então o `RegistroUso` gerado entra
-  no cálculo de energia normalmente.
-- Guard contra o reloader do Flask subir o agendador duas vezes em modo
-  debug (`WERKZEUG_RUN_MAIN`).
-- `tzdata` adicionado às dependências (Windows não tem banco de fusos
-  horários embutido, `zoneinfo` precisa do pacote pra funcionar).
-
-**Validado por:** smoke test (24/24) + teste manual criando uma automação
-com o horário atual e disparando a função do agendador diretamente, sem
-esperar o minuto virar.
-
----
-
-## Sprint 2 — Painel de energia inteligente
-
-**Objetivo:** dar substância real à categoria INTELLIGENCE do projeto —
-não só mostrar números, mas gerar um insight a partir deles.
-
-**Entregas:**
-- Alerta de consumo baseado em regra (`gerar_alerta()`): compara cada
-  dispositivo com a semana anterior e aponta o que mais cresceu, acima de
-  um limiar e com uma base mínima de comparação.
-- Comparação semanal (variação %) e projeção mensal de custo.
-- Gráfico empilhado de consumo diário por cômodo (paleta categórica de 5
-  cores, ordem fixa por cômodo, legenda, tooltip por segmento).
-- `seed.py` estendido para duas semanas de histórico (base de comparação
-  da "semana anterior"), com o ar-condicionado ganhando uma tendência real
-  de alta pra exercitar o alerta com um número plausível.
-
-**Bug encontrado e corrigido durante a sprint:** o alerta inicialmente
-calculava uma variação de **10794%** — o seed só tinha uma semana de
-histórico, então o período de comparação ficava quase vazio e a divisão
-explodia. Corrigido exigindo uma base mínima de consumo no período
-anterior antes de calcular variação, além de estender o histórico do seed.
-
----
-
-## Sprint 3 — Automação de UI, login e segurança
-
-**Objetivo:** fechar os itens de experiência e o gap de segurança que
-ainda restavam.
-
-**Entregas:**
-- Toggle de ativar/desativar cada automação individualmente (nova rota
-  `alternar_automacao`), respeitando a mesma permissão de controle do
+- A modelagem de dados com herança (`Dispositivo` e suas subclasses — Luz,
+  Porta, Janela, Câmera, TV, Eletrodoméstico, Robô Aspirador,
+  Ar-condicionado), cada uma com seu próprio jeito de responder
+  `status()`/`ligar()`/`desligar()`.
+- Login com dois perfis (Administrador e Usuário Comum), com permissão por
   dispositivo.
-- Banner "próxima automação" no dashboard (`proxima_automacao()` +
-  `rotulo_quando()` em `services/agendador.py`).
-- Filtro por cômodo no dashboard (chips + JS puro, sem framework).
-- Login: botões "continuar como Administrador/Usuário Comum" e "lembrar
-  de mim" (`Flask-Login remember=True`).
-- Proteção CSRF (`Flask-WTF`) nos 8 formulários POST do app.
-- `seed.py`: automações de exemplo (não existia nenhuma antes, então o
-  banner e o toggle não tinham o que mostrar numa instalação nova).
+- Painel de energia calculando kWh e custo em cima do histórico real de
+  uso, não valor fixo.
+- Automações salvas no banco (dava pra criar), mas sem disparo automático.
+- Relatório semanal por e-mail (com prévia quando não tem SMTP
+  configurado).
+- Um arquivo de teste (`smoke_test.py`) com 24 checagens automáticas.
 
-**Bug encontrado e corrigido durante a sprint:** `NameError: timedelta` em
-`services/agendador.py` (função nova usando `timedelta` sem importar) —
-pego pelo smoke test na primeira execução, corrigido na hora.
-
-**Commit (sprints 1-3, um único commit de features):**
-`Automacoes disparam de verdade + painel de energia inteligente + UI/seguranca`
+O que faltava, pelo próprio README do projeto: as automações não
+disparavam sozinhas, não tinha proteção contra CSRF, e o e-mail dependia de
+configurar SMTP.
 
 ---
 
-## Sprint 4 — Documentação e publicação
+## Sprint 1 — Fazendo as automações disparar sozinhas
 
-**Objetivo:** deixar registro do processo e publicar o projeto.
+Esse era o item mais importante da lista de pendências. A solução foi usar
+o APScheduler rodando junto do Flask, checando a cada minuto se alguma
+automação bate com o horário e o dia atual, e chamando o mesmo
+`ligar()`/`desligar()` que o botão da tela usa.
 
-**Entregas:**
-- `PROCESS.md`: relato do processo de desenvolvimento (decisões, bugs
-  encontrados/corrigidos, como cada coisa foi validada).
-- `.gitignore` (exclui `.venv/`, `__pycache__/`, `pulse2050.db`).
-- Repositório Git inicializado e publicado no GitHub.
-- Este arquivo (`SPRINTS.md`), organizando o processo em formato de sprint
-  pra servir de referência de metodologia.
+No caminho, resolvemos um problema de fuso horário (o resto do sistema usa
+UTC, mas o horário da automação é hora local — criamos uma configuração
+`TIMEZONE`), descobrimos que o Windows precisa do pacote `tzdata` pra
+entender fusos horários, e evitamos que o agendador rodasse duas vezes ao
+mesmo tempo por causa do modo de desenvolvimento do Flask.
 
-**Commits:**
-`Documenta o processo de desenvolvimento (PROCESS.md)` ·
-`Organiza o desenvolvimento em sprints (SPRINTS.md)`
+Testamos criando uma automação com o horário de agora e chamando a função
+do agendador na mão, sem esperar o relógio virar — funcionou.
 
 ---
 
-## Sprint 5 — Conferência contra o edital oficial
+## Sprint 2 — Deixando o painel de energia mais inteligente
 
-**Objetivo:** parar de avaliar o projeto "no olho" e checar item por item
-contra o roteiro oficial da categoria INTELLIGENCE (ExpoTech 2026.2,
-4º semestre CDC) pra garantir que nada estava faltando antes da avaliação
-individual em sala.
+Aqui o foco foi dar mais conteúdo real pra categoria INTELLIGENCE do
+projeto. Adicionamos: comparação com a semana anterior, projeção do gasto
+do mês, um alerta que aponta o dispositivo que mais aumentou o consumo, e
+um gráfico do consumo diário por cômodo.
 
-**O que o edital pede, literalmente, em "Requisitos do Projeto":**
-modelagem de dados, fluxograma, interface de usuário, validação de dados,
-linguagem (Rust/Python/Java), integração front-end/back-end, autenticação,
-banco relacional, perfis de usuário com permissões distintas. Mais os
-"Conceitos e Critérios Abordados": UX/UI, desenvolvimento na linguagem
-escolhida, POO (classes/herança/polimorfismo/encapsulamento), estratégia
-de estruturas de dados, engenharia de software.
+Durante o teste, o alerta calculou uma variação de consumo de **10794%**
+num dispositivo — bug real, causado por só termos uma semana de dados de
+exemplo (a "semana anterior" usada pra comparar praticamente não tinha
+dado nenhum). Corrigimos exigindo uma base mínima de comparação, e
+estendendo os dados de exemplo pra duas semanas.
 
-**Gaps encontrados na conferência:**
-- **Fluxograma: ausente por completo.** Item explícito da lista, checkbox
-  literal, nunca foi feito.
-- **Estratégia de estruturas de dados: implícita, não documentada.** O
-  código já fazia escolhas conscientes (dict pra lookup O(1), set pra
-  checagem de dia da semana, ordenação delegada ao banco), mas em lugar
-  nenhum isso estava explicado — se perguntado na arguição individual
-  ("por que um dict aqui?"), não havia resposta preparada por escrito.
-- Todos os outros 8 requisitos e os outros 4 critérios já estavam
-  atendidos pelo trabalho das sprints anteriores.
+---
 
-**Entregas da sprint:**
-- `FLUXOGRAMA.md`: fluxo completo da aplicação em diagrama (Mermaid,
-  renderiza direto no GitHub), cobrindo os dois pontos de entrada de
-  eventos no sistema — uma pessoa pela UI e o agendador rodando sozinho —
-  e todas as checagens de permissão/validação no caminho.
-- `PROCESS.md`: nova seção "Estruturas de dados" justificando cada escolha
-  já existente no código (nenhuma estrutura nova foi criada — só a
-  explicação do porquê de cada uma).
-- `README.md`: linkando os três documentos complementares logo na
-  introdução.
+## Sprint 3 — Terminando a experiência e a segurança
 
-**Nota sobre a regra de equipe (3 a 5 integrantes, avaliação individual):**
-como a nota é individual e qualquer integrante pode ser questionado sobre
-qualquer parte do projeto, os documentos `PROCESS.md`/`SPRINTS.md` viram
-material de estudo real pra equipe toda — não só um registro do que foi
-feito, mas a base pra cada pessoa conseguir explicar qualquer trecho do
-código na arguição, mesmo uma parte que não foi ela quem escreveu.
+- Cada automação ganhou um botão de ativar/desativar.
+- O painel passou a mostrar a próxima automação a disparar.
+- Adicionamos filtro por cômodo no painel.
+- O login ganhou atalhos pra entrar como Administrador/Usuário Comum (só
+  facilita testar) e a opção "lembrar de mim".
+- Colocamos proteção contra CSRF em todos os formulários (Flask-WTF).
 
-## Sprint 6 — Maquete 3D interativa e integrada
+Um bug bobo apareceu aqui — uma função nova usando `timedelta` sem
+importar. O smoke test acusou isso na hora e corrigimos rápido.
 
-**Objetivo:** dar ao projeto um diferencial visual de verdade — não só um
-mockup pra mostrar a ideia, mas uma segunda forma de controlar a casa,
-dentro do próprio painel, ligada ao banco de dados de verdade.
+---
 
-**Caminho até aqui (três protótipos, um final):**
-1. Mockup em Artifact de uma planta isométrica (2.5D) clicável, pra validar
-   se "clicar num ícone e ver a casa reagir" valia o esforço antes de
-   construir de verdade.
-2. Um tour 3D em Three.js (câmera automática passeando pela casa) — bonito,
-   mas sem interação nenhuma ainda.
-3. Os dois combinados: a cena 3D do tour ganhou os gatilhos clicáveis do
-   mockup isométrico — luzes, TV, robô aspirador, porta da garagem etc.,
-   todos reagindo a clique.
+## Sprint 4 — Documentando e publicando
 
-**Depois disso, integração de verdade com o Flask:**
-- Nova aba "Maquete 3D" no dashboard, ao lado dos cards — carrega a cena só
-  quando aberta pela primeira vez.
-- Clicar num dispositivo na cena chama a mesma rota
-  `/dispositivo/<id>/alternar` que os cards já usavam — mesma permissão,
-  mesmo registro de uso, sem lógica duplicada.
-- Nova rota `GET /api/dispositivos` (JSON) que a maquete consulta a cada 5
-  segundos, pra pegar mudanças feitas pelo agendador ou por outra aba sem
-  precisar recarregar a página.
+Criamos o `PROCESS.md` contando o processo de desenvolvimento, o
+`.gitignore`, inicializamos o repositório Git e publicamos no GitHub. Esse
+próprio arquivo (`SPRINTS.md`) também nasceu nessa etapa.
 
-**Entregas:**
-- `static/js/casa3d.js` — a cena 3D, conectada ao banco.
-- `main.py` — rota `/api/dispositivos` e os dados da maquete no contexto
-  do dashboard.
-- `templates/dashboard.html` — aba nova, carregamento sob demanda das
-  bibliotecas do Three.js.
-- `templates/base.html` — meta tag com o token CSRF, pra chamadas AJAX.
-- `README.md`/`PROCESS.md` — documentando a decisão de reaproveitar a rota
-  de toggle existente em vez de duplicar lógica, e o poll em vez de
-  WebSocket.
+---
 
-**Validado por:** smoke test (24/24) e teste manual via `curl` reproduzindo
-exatamente a chamada que o clique na maquete faz (POST com o header
-`X-CSRFToken`), confirmando pela API que o dispositivo mudou de estado no
-banco de verdade.
+## Sprint 5 — Conferindo contra o edital
 
-## O que aproveitar disso pro próximo projeto do grupo
+Paramos de confiar só na nossa impressão de "acho que já tá tudo pronto" e
+checamos item por item contra o roteiro oficial da categoria INTELLIGENCE.
+Encontramos dois furos: não tínhamos fluxograma nenhum (item explícito da
+lista), e nunca tínhamos escrito o porquê das escolhas de estrutura de
+dados que o código já usava.
 
-- **Cadência:** cada sprint acima corresponde a "uma lacuna resolvida por
-  vez" — dá pra manter esse tamanho de escopo (uma dor de cada vez, testada
-  antes de passar pra próxima) com 4 pessoas em paralelo, uma por
-  frente/lacuna.
-- **Definition of Done que funcionou aqui:** rodar o smoke test depois de
-  cada mudança pegou dois bugs reais antes de irem pra produção — vale
-  manter testes automatizados rodando a cada sprint, não só no final.
-- **O que faltou nesse projeto e vale planejar desde o início no próximo:**
-  fluxo de git de equipe de verdade (branch por pessoa/feature, PR com
-  review antes de mergear) — aqui foi tudo em cima de `main` porque era
-  uma pessoa só.
+Resolvemos os dois: criamos o `FLUXOGRAMA.md` com o fluxo completo da
+aplicação, e escrevemos a explicação das estruturas de dados no
+`PROCESS.md`.
+
+Como a avaliação da categoria é individual e qualquer um do grupo pode ser
+questionado sobre qualquer parte do projeto, esses documentos viraram
+material de estudo pra todo mundo — não só um registro do que foi feito.
+
+---
+
+## Sprint 6 — A maquete 3D
+
+Essa foi a sprint que deu mais trabalho de decisão, porque passamos por
+alguns protótipos antes de chegar no formato final:
+
+1. Primeiro um mockup mais simples (planta baixa 2.5D) só pra testar se a
+   ideia de "clicar num dispositivo e ver a casa reagir" valia o esforço.
+2. Depois um passeio 3D pela casa (Three.js), bonito mas sem interação
+   nenhuma ainda.
+3. Juntamos os dois: a cena 3D ganhou os cliques interativos do primeiro
+   protótipo.
+
+E então veio a parte que mais importa: conectar isso ao Flask de verdade.
+A maquete usa a mesma rota que os cards já usavam pra ligar/desligar um
+dispositivo (nada de lógica duplicada), e criamos uma rota nova só de
+consulta que ela confere a cada 5 segundos, pra pegar mudanças vindas do
+agendador ou de outra pessoa mexendo em outra aba. As bibliotecas 3D só
+carregam quando a aba é aberta, pra não deixar o painel normal mais lento.
+
+No fim, completamos os três dispositivos que ainda faltavam objeto na
+cena (Câmera da Sala, Geladeira, Luz da Garagem) — hoje os 13 dispositivos
+do projeto aparecem na maquete.
+
+**Testamos** rodando o smoke test de novo (nada quebrou) e simulando via
+linha de comando exatamente a chamada que um clique na maquete faz,
+confirmando que o dispositivo realmente muda de estado no banco.
+
+---
+
+## O que a gente aproveita disso pro próximo projeto
+
+- **Um problema de cada vez funciona bem.** Cada sprint acima resolveu uma
+  coisa específica, testada antes de passar pra próxima — dá pra manter
+  esse ritmo com o grupo trabalhando em paralelo, uma pessoa por frente.
+- **Testar depois de cada mudança compensa.** O smoke test pegou dois bugs
+  reais antes deles virarem problema de verdade — vale manter isso desde o
+  início do próximo projeto, não só no final.
+- **Fluxo de Git de equipe é algo que ainda não experimentamos** — esse
+  projeto inteiro foi feito em cima da branch principal porque começou
+  como trabalho de uma pessoa só. No próximo, vale já nascer com branch por
+  pessoa/funcionalidade e revisão antes de juntar o código.
