@@ -1,7 +1,6 @@
 # O projeto em sprints
 
-Esse documento organiza o desenvolvimento do PULSE2050 em sprints — não é
-material de entrega da disciplina, é mais um jeito de deixar registrado
+Esse documento organiza o desenvolvimento do PULSE2050 em sprints, mostrando
 como o projeto foi crescendo, período por período. Cada sprint aqui
 representa um pedaço real de trabalho, não uma data fixa de calendário.
 
@@ -97,9 +96,8 @@ Resolvemos os dois: criamos o `FLUXOGRAMA.md` com o fluxo completo da
 aplicação, e escrevemos a explicação das estruturas de dados no
 `PROCESS.md`.
 
-Como a avaliação da categoria é individual e qualquer um do grupo pode ser
-questionado sobre qualquer parte do projeto, esses documentos viraram
-material de estudo pra todo mundo — não só um registro do que foi feito.
+Assim, qualquer um do grupo consegue explicar qualquer parte do projeto,
+não só quem escreveu aquele trecho específico.
 
 ---
 

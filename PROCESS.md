@@ -3,9 +3,7 @@
 Esse documento é o nosso registro de como fomos construindo o PULSE2050 —
 não só o que ficou pronto, mas o caminho até chegar lá: o que a gente
 tentou, o que deu errado antes de dar certo, e por que escolhemos um jeito
-de fazer em vez de outro. A ideia é que qualquer um do grupo consiga usar
-isso pra estudar antes da arguição individual, mesmo numa parte do código
-que não foi ele quem escreveu.
+de fazer em vez de outro.
 
 ## De onde a gente partiu
 
@@ -96,8 +94,7 @@ nossa impressão de que "tava tudo pronto". E encontramos dois furos:
 - **A estratégia de estrutura de dados nunca foi explicada em lugar
   nenhum.** O código já fazia escolhas conscientes (por exemplo, usar um
   dicionário pra buscar a cor de um cômodo em vez de percorrer uma lista
-  toda vez), mas nunca escrevemos o porquê — e se alguém perguntasse isso
-  na arguição, não teríamos uma resposta pronta.
+  toda vez), mas nunca tínhamos escrito o porquê em lugar nenhum.
 
 Resolvemos os dois: criamos o `FLUXOGRAMA.md` com o fluxo completo da
 aplicação, e acrescentamos uma seção no fim deste documento explicando as
