@@ -2,8 +2,7 @@
 
 Esse documento organiza o desenvolvimento do PULSE2050 em sprints — não é
 material de entrega da disciplina, é mais um jeito de deixar registrado
-como o projeto foi crescendo, período por período, pra gente usar de
-referência (inclusive pro próximo projeto do grupo). Cada sprint aqui
+como o projeto foi crescendo, período por período. Cada sprint aqui
 representa um pedaço real de trabalho, não uma data fixa de calendário.
 
 ---
@@ -130,18 +129,3 @@ do projeto aparecem na maquete.
 **Testamos** rodando o smoke test de novo (nada quebrou) e simulando via
 linha de comando exatamente a chamada que um clique na maquete faz,
 confirmando que o dispositivo realmente muda de estado no banco.
-
----
-
-## O que a gente aproveita disso pro próximo projeto
-
-- **Um problema de cada vez funciona bem.** Cada sprint acima resolveu uma
-  coisa específica, testada antes de passar pra próxima — dá pra manter
-  esse ritmo com o grupo trabalhando em paralelo, uma pessoa por frente.
-- **Testar depois de cada mudança compensa.** O smoke test pegou dois bugs
-  reais antes deles virarem problema de verdade — vale manter isso desde o
-  início do próximo projeto, não só no final.
-- **Fluxo de Git de equipe é algo que ainda não experimentamos** — esse
-  projeto inteiro foi feito em cima da branch principal porque começou
-  como trabalho de uma pessoa só. No próximo, vale já nascer com branch por
-  pessoa/funcionalidade e revisão antes de juntar o código.
