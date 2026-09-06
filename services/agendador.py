@@ -23,6 +23,9 @@ _DIAS_ABREV = ["seg", "ter", "qua", "qui", "sex", "sab", "dom"]
 
 
 def _dia_bate(dias_semana, hoje_weekday):
+    """`dias_semana` é "todos" ou uma lista tipo "seg,qua,sex"; `hoje_weekday`
+    é o número do dia da semana do Python (0=segunda...6=domingo). Devolve se
+    o dia de hoje bate com o que a automação pede."""
     dias_semana = (dias_semana or "todos").strip().lower()
     if dias_semana == "todos":
         return True
@@ -31,6 +34,9 @@ def _dia_bate(dias_semana, hoje_weekday):
 
 
 def _executar_automacoes_pendentes(app):
+    """Job chamado uma vez por minuto (ver iniciar_agendador): pega todas as
+    automações ativas cujo horário é exatamente agora, confere se o dia da
+    semana bate, e dispara a ação de cada dispositivo ligado a elas."""
     with app.app_context():
         agora_local = datetime.now(ZoneInfo(app.config["TIMEZONE"]))
         horario_atual = agora_local.strftime("%H:%M")

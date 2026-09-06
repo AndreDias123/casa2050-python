@@ -26,18 +26,26 @@ def _periodo_semana():
 @bp.route("/")
 @login_required
 def painel():
+    """Painel de energia: consumo/custo da semana, comparação com a semana
+    anterior, alerta de dispositivo que mais cresceu, e o gráfico diário por
+    cômodo. Tudo calculado na hora a partir do RegistroUso — nada fica
+    pré-armazenado, então não existe risco de o painel mostrar número velho."""
     inicio, fim = _periodo_semana()
-    inicio_anterior = inicio - (fim - inicio)
+    inicio_anterior = inicio - (fim - inicio)  # mesma duração, período anterior — base de comparação
 
     dispositivos = Dispositivo.query.all()
     comodos = Comodo.query.order_by(Comodo.id).all()
+    # Cor fixa por cômodo, calculada uma vez aqui e reaproveitada em todo
+    # gráfico da página (ver _CORES_SERIE acima).
     cor_comodo = {c.nome: _CORES_SERIE[i % len(_CORES_SERIE)] for i, c in enumerate(comodos)}
 
+    # --- consumo da semana atual ---
     linhas = resumo_consumo(dispositivos, inicio, fim)
     kwh_total = sum(kwh for _, kwh in linhas)
     tarifa = tarifa_atual()
     custo_total = custo(kwh_total, tarifa)
 
+    # --- comparação com a semana anterior + projeção do mês ---
     kwh_total_anterior = sum(kwh for _, kwh in resumo_consumo(dispositivos, inicio_anterior, inicio))
     variacao_semana = variacao_percentual(kwh_total, kwh_total_anterior)
     projecao_kwh = projecao_mensal(kwh_total, dias_periodo=7)
@@ -51,8 +59,9 @@ def painel():
         nome_comodo = dispositivo.comodo.nome
         por_comodo[nome_comodo] = por_comodo.get(nome_comodo, 0.0) + kwh
 
+    # --- matéria-prima do gráfico empilhado (um valor por dia/cômodo) ---
     diario = consumo_diario_por_comodo(dispositivos, comodos, dias=7, fim=fim)
-    teto_diario = max((dia["total"] for dia in diario), default=0.0)
+    teto_diario = max((dia["total"] for dia in diario), default=0.0)  # maior dia = topo do eixo Y
 
     return render_template(
         "energia.html",
@@ -77,6 +86,9 @@ def painel():
 @bp.route("/relatorio", methods=["GET", "POST"])
 @login_required
 def relatorio():
+    """GET mostra uma tela de confirmação; POST de fato gera o relatório
+    (services/relatorios.py) e mostra o resultado — separado em duas etapas
+    pra não gerar (e tentar mandar e-mail) só de alguém visitar a página."""
     inicio, fim = _periodo_semana()
 
     if request.method == "POST":

@@ -18,6 +18,8 @@ def dashboard():
     total_dispositivos = Dispositivo.query.count()
     ativos = Dispositivo.query.filter_by(ativo=True).count()
 
+    # Acha a próxima automação a disparar (se houver alguma ativa) pra
+    # montar o banner "Próxima automação" no topo do painel.
     tz = ZoneInfo(current_app.config["TIMEZONE"])
     automacao, quando = proxima_automacao(tz)
     proxima = None
@@ -31,6 +33,9 @@ def dashboard():
             ],
         }
 
+    # Estado inicial de cada dispositivo (id/nome/ativo/permissão), embutido
+    # no HTML como JSON pra maquete 3D (static/js/casa3d.js) usar assim que a
+    # página carrega, sem precisar de uma chamada extra antes de mostrar algo.
     dispositivos_3d = [
         {"id": d.id, "nome": d.nome, "ativo": d.ativo, "pode_controlar": d.pode_controlar(current_user)}
         for c in comodos for d in c.dispositivos
@@ -65,8 +70,12 @@ def _get_dispositivo_ou_404(dispositivo_id):
 @bp.route("/dispositivo/<int:dispositivo_id>")
 @login_required
 def detalhe_dispositivo(dispositivo_id):
+    """Tela de um dispositivo só: histórico de uso de hoje e as automações
+    que mexem nele (pra criar uma nova ou ativar/desativar as existentes)."""
     dispositivo = _get_dispositivo_ou_404(dispositivo_id)
 
+    # Só os eventos de hoje (meia-noite UTC até agora) — o histórico completo
+    # fica no banco, mas a tela só mostra o dia atual.
     inicio_hoje = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     registros_hoje = (
         RegistroUso.query.filter(
@@ -88,6 +97,9 @@ def detalhe_dispositivo(dispositivo_id):
 @bp.route("/dispositivo/<int:dispositivo_id>/alternar", methods=["POST"])
 @login_required
 def alternar_dispositivo(dispositivo_id):
+    """Liga/desliga um dispositivo. Usada pelo botão de toggle dos cards, da
+    tela de detalhe e pelos cliques na maquete 3D — é a mesma rota pras três
+    interfaces, então a regra de permissão e o registro de uso são únicos."""
     dispositivo = _get_dispositivo_ou_404(dispositivo_id)
 
     if not dispositivo.pode_controlar(current_user):
@@ -125,6 +137,8 @@ def ajustar_intensidade(dispositivo_id):
 @bp.route("/dispositivo/<int:dispositivo_id>/permissao", methods=["POST"])
 @login_required
 def alternar_permissao(dispositivo_id):
+    """Só o Administrador chega aqui (abort 403 pra qualquer outro perfil) —
+    liga/desliga se o Usuário Comum pode controlar este dispositivo."""
     if not current_user.is_admin:
         abort(403)
     dispositivo = _get_dispositivo_ou_404(dispositivo_id)
@@ -165,6 +179,8 @@ def criar_automacao(dispositivo_id):
 @bp.route("/dispositivo/<int:dispositivo_id>/automacao/<int:automacao_id>/alternar", methods=["POST"])
 @login_required
 def alternar_automacao(dispositivo_id, automacao_id):
+    """Ativa/desativa uma automação sem precisar apagar e recriar — enquanto
+    inativa, o agendador (services/agendador.py) simplesmente a ignora."""
     dispositivo = _get_dispositivo_ou_404(dispositivo_id)
     if not dispositivo.pode_controlar(current_user):
         flash("Seu perfil não tem permissão para alterar automações deste dispositivo.", "erro")

@@ -35,9 +35,11 @@ window.iniciarCasa3D = function (opts) {
     if (sceneId) opts.deviceMap[sceneId] = d;
   });
 
+  // reducedMotion: respeita a preferência de acessibilidade do sistema —
+  // desliga as animações (robô andando, câmera piscando, tour automático).
   var reducedMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  var wrap = document.getElementById('iso3d-wrap');
-  var appEl = document.getElementById('iso3d-app');
+  var wrap = document.getElementById('iso3d-wrap');   // caixa que contém a cena (mede largura/altura)
+  var appEl = document.getElementById('iso3d-app');   // onde o <canvas> do Three.js é inserido
 
   var ACCENT = 0x2fd8cf;
   var WARM = 0xffb870;
@@ -45,6 +47,7 @@ window.iniciarCasa3D = function (opts) {
   var WALL_H = 2.6, WALL_T = 0.2;
   var wallColor = 0xd7d2c4;
 
+  // ---------- renderer, cena e câmera (setup padrão de qualquer cena Three.js) ----------
   var renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
   renderer.setSize(wrap.clientWidth, wrap.clientHeight);
@@ -63,6 +66,7 @@ window.iniciarCasa3D = function (opts) {
   var camera = new THREE.PerspectiveCamera(52, wrap.clientWidth / wrap.clientHeight, 0.1, 200);
   camera.position.set(0, 14, 22);
 
+  // ---------- iluminação da cena (luz ambiente + "luar" direcional com sombra) ----------
   var hemi = new THREE.HemisphereLight(0x33415c, 0x0a0a0a, 0.55);
   scene.add(hemi);
   var moon = new THREE.DirectionalLight(0x9fb6d9, 0.55);
@@ -75,6 +79,8 @@ window.iniciarCasa3D = function (opts) {
   moon.shadow.bias = -0.0015;
   scene.add(moon);
 
+  // Céu estrelado: nuvem de pontos espalhados aleatoriamente numa meia-esfera
+  // acima da casa — só decoração, não interage com nada.
   (function stars() {
     var n = 700, pos = new Float32Array(n * 3);
     for (var i = 0; i < n; i++) {
@@ -91,6 +97,10 @@ window.iniciarCasa3D = function (opts) {
     scene.add(new THREE.Points(g, m));
   })();
 
+  // ---------- fábricas de geometria: em vez de repetir "new THREE.Mesh(new
+  // THREE.BoxGeometry(...), new THREE.MeshStandardMaterial(...))" toda hora,
+  // esses helpers escondem o "boilerplate" do Three.js atrás de uma chamada
+  // curta (box/orb/place/wallEW/wallNS/floorPlane) ----------
   function box(w, h, d, color, o) {
     o = o || {};
     var mat = new THREE.MeshStandardMaterial({
@@ -118,6 +128,8 @@ window.iniciarCasa3D = function (opts) {
     m.rotation.x = -Math.PI / 2; m.position.set(cx, y || 0.02, cz); m.receiveShadow = true; scene.add(m); return m;
   }
 
+  // ---------- chão, quintal e os 4 cômodos modelados (Quarto/Sala/Cozinha/
+  // Garagem — Área Externa não tem piso próprio, é o quintal) ----------
   floorPlane(0, 0, 90, 90, 0x0b0f0c, -0.02);
   floorPlane(-3, -11, 18, 10, 0x171a15, 0.0);
   floorPlane(-5, -12.5, 3.4, 9, 0x3b382f, 0.01);
@@ -126,6 +138,10 @@ window.iniciarCasa3D = function (opts) {
   floorPlane(4, 0, 8, 12, 0x2a2320);
   floorPlane(-11, -3, 6, 6, 0x1b1c1e);
 
+  // Paredes: cada chamada é um segmento reto (leste-oeste ou norte-sul) nas
+  // coordenadas certas pra fechar os cômodos e abrir as portas/passagens
+  // entre eles — não tem um "gerador de planta baixa", é tudo desenhado à
+  // mão, medida por medida.
   wallEW(-6.95, -6, 2.1); wallEW(1.95, -6, 12.1); wallEW(0, 6, 16);
   wallNS(-8, 3, 6); wallNS(8, 0, 12);
   wallEW(-5.3, 0, 5.4); wallEW(-0.7, 0, 1.4);
@@ -134,6 +150,11 @@ window.iniciarCasa3D = function (opts) {
   wallNS(-14, -3, 6); wallEW(-11, 0, 6);
   place(box(6, 0.4, WALL_T, wallColor), -11, WALL_H - 0.2, -6);
 
+  // ---------- registro de dispositivos: a "ponte" entre o dispositivo real
+  // (banco de dados, via opts.deviceMap montado lá em cima) e o objeto 3D
+  // que representa ele na cena. Cada registerDevice() guarda o estado atual
+  // (on/off), a permissão da pessoa logada, e uma função `apply(on)` que
+  // sabe como atualizar visualmente aquele objeto específico. ----------
   var devices = {};
   var deviceOrder = [];
   function registerDevice(sceneId, mesh, apply) {
@@ -145,6 +166,9 @@ window.iniciarCasa3D = function (opts) {
     apply(initialOn);
   }
 
+  // ---------- móveis e objetos de cada cômodo, incluindo os que são
+  // dispositivos controláveis (registrados logo abaixo) e os que são só
+  // decoração (sofá, cama, prateleira, etc., sem registerDevice) ----------
   var garagePanel = place(box(5.6, 2.2, 0.12, 0x8b8f96, { metalness: 0.4, roughness: 0.5 }), -11, 1.1, -6);
   var garageClosedY = 1.1, garageOpenY = 2.85, garageTargetY = garageClosedY;
 
@@ -235,6 +259,11 @@ window.iniciarCasa3D = function (opts) {
   }
   refreshCount();
 
+  // ---------- trajeto da câmera do "tour automático": posPts é por onde a
+  // câmera passa, lookPts é pra onde ela mira em cada um desses pontos —
+  // uma curva suave (Catmull-Rom) interpola entre eles, e segDur controla
+  // quantos segundos cada trecho dura (não é velocidade constante, senão os
+  // dois pulos aéreos, bem mais longos, comeriam o tour todo). ----------
   var posPts = [
     new THREE.Vector3(0, 15, 24), new THREE.Vector3(-3, 5, -14), new THREE.Vector3(-5, 1.7, -11),
     new THREE.Vector3(-5, 1.6, -6.5), new THREE.Vector3(-4, 1.6, -3), new THREE.Vector3(-2.5, 1.6, -1.5),
@@ -275,6 +304,8 @@ window.iniciarCasa3D = function (opts) {
   ];
   function labelFor(frac) { var lbl = labelStops[0].label; for (var i = 0; i < labelStops.length; i++) if (frac >= labelStops[i].at) lbl = labelStops[i].label; return lbl; }
 
+  // ---------- estado do player (tocando/pausado, modo livre/automático) e
+  // os elementos de HUD que mostram/controlam isso ----------
   var elapsed = 0, playing = !reducedMotion, freeMode = !!reducedMotion;
   var clock = new THREE.Clock();
   var orbit = new THREE.OrbitControls(camera, renderer.domElement);
@@ -364,6 +395,9 @@ window.iniciarCasa3D = function (opts) {
   }
   setInterval(syncFromServer, 5000);
 
+  // ---------- detecta clique/toque num dispositivo: converte a posição do
+  // mouse pra coordenadas normalizadas (-1 a 1) e lança um raio da câmera
+  // até a cena, pra saber em qual objeto 3D a pessoa realmente clicou ----------
   var raycaster = new THREE.Raycaster();
   var pointerNdc = new THREE.Vector2();
   var interactiveMeshes = deviceOrder.map(function (id) { return devices[id].mesh; });
@@ -390,6 +424,10 @@ window.iniciarCasa3D = function (opts) {
     if (id) toggleDevice(id);
   });
 
+  // Laço principal, chamado uma vez por frame: atualiza as pequenas
+  // animações (robô andando, câmeras piscando, porta da garagem deslizando),
+  // avança a câmera no tour (se estiver tocando) ou aplica o controle livre
+  // de órbita, e por fim desenha o frame.
   function animate() {
     requestAnimationFrame(animate);
     var dt = clock.getDelta();

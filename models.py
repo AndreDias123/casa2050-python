@@ -18,6 +18,8 @@ from extensions import db
 
 
 def agora():
+    """Hora atual em UTC — usada como default de todo campo de timestamp do
+    banco, pra tudo ficar no mesmo fuso e dar pra comparar sem confusão."""
     return datetime.now(timezone.utc)
 
 
