@@ -15,19 +15,6 @@ Também temos um canvas com as telas do front reproduzidas fora do código
 (login, painel, detalhe do dispositivo, energia e maquete 3D), pra quem
 quiser ver o design isolado: [PULSE2050 Design System](https://claude.ai/code/artifact/d5ad1bc4-2745-47cc-967f-b8524e9a9e51).
 
-## Capturas de tela
-
-| Login | Painel |
-|---|---|
-| ![Login](docs/screenshots/login.png) | ![Painel](docs/screenshots/dashboard.png) |
-
-| Detalhe do dispositivo | Energia |
-|---|---|
-| ![Detalhe do dispositivo](docs/screenshots/detalhe-dispositivo.png) | ![Energia](docs/screenshots/energia.png) |
-
-**Maquete 3D**
-![Maquete 3D](docs/screenshots/maquete-3d.png)
-
 ## Com que a gente construiu
 
 Python 3.10+, Flask, SQLAlchemy (com Flask-SQLAlchemy), Flask-Login e
