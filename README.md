@@ -95,11 +95,7 @@ Além de mostrar quanto cada dispositivo consumiu, o painel compara a
 semana atual com a anterior, projeta o gasto do mês inteiro no ritmo atual,
 e tem um gráfico do consumo dia a dia por cômodo. Também colocamos um
 alerta simples: se algum dispositivo consumiu bem mais que na semana
-passada, o painel avisa e sugere olhar o agendamento dele. Não é
-inteligência artificial de verdade (é só uma comparação percentual com uma
-regra), mas é a parte do projeto que mais tenta materializar a categoria
-INTELLIGENCE — treinar um modelo de ML não fazia sentido pro tanto de dado
-que uma casa simulada gera.
+passada, o painel avisa e sugere olhar o agendamento dele.
 
 ## Maquete 3D
 
@@ -145,18 +141,3 @@ exemplo, a validação do horário de uma automação estava aceitando
 `"25:99"` como se fosse um horário válido, e um `NameError` bobo (um
 `import` esquecido) que só apareceu quando testamos de novo depois de
 mexer no agendador.
-
-## O que ainda dá pra melhorar
-
-- O formulário de criar automação só permite "todo dia" — o banco e o
-  agendador já entendem dias específicos (tipo `"seg,qua,sex"`), só falta
-  o seletor na tela.
-- Três dispositivos (Câmera da Sala, Geladeira, Luz da Garagem) foram os
-  últimos a ganhar objeto na maquete 3D — os outros dez já estavam lá
-  desde a primeira versão da integração.
-- O envio de e-mail de verdade só funciona se configurar `SMTP_HOST`,
-  `SMTP_USER` e `SMTP_SENHA` (variáveis de ambiente, ver `config.py`). Sem
-  isso, o relatório é gerado normalmente e mostra a prévia na tela.
-- Os botões "continuar como Administrador/Usuário Comum" na tela de login
-  são só pra facilitar a demonstração — as mesmas contas já aparecem em
-  texto simples logo abaixo, então não muda o nível de acesso a nada.
