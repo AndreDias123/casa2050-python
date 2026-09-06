@@ -13,7 +13,7 @@ construindo o projeto (e onde erramos e corrigimos no caminho), e
 
 Também temos um canvas com as telas do front reproduzidas fora do código
 (login, painel, detalhe do dispositivo, energia e maquete 3D), pra quem
-quiser ver o design isolado: [PULSE2050 Design System](https://claude.ai/code/artifact/d5ad1bc4-2745-47cc-967f-b8524e9a9e51).
+quiser ver o design isolado: [PULSE2050 Design System]([https://claude.ai/code/artifact/d5ad1bc4-2745-47cc-967f-b8524e9a9e51](https://www.figma.com/design/T8fPfgtPJPYLN3F3lGdegU/Projeto?node-id=2085-2&p=f&t=MSsG3kArnrFYGlrR-0)).
 
 ## Com que a gente construiu
 
